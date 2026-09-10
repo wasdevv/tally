@@ -420,6 +420,47 @@ ficou pendente depois.
 **Regra que isso ilustra.** Gate que aponta um problema real se atende, não se
 afrouxa. O limite continua onde estava.
 
+## 32. Qual registro vira lançamento é dado do layout, não regra do parser
+
+**Decisão.** A DSL tem `detail(...)` para registro que vira lançamento e
+`record(...)` para estrutura. O parser pergunta `spec.emitsEntry`.
+
+**Como apareceu.** O parser tinha `if (spec.equalTo != "1") return null` — o
+discriminador de detalhe **chumbado em código**. Um banco que usasse outra letra
+exigiria mudar o parser, o que contradiz a promessa da própria DSL.
+
+**Provado por.** `SecondBankLayoutSpec` declara um banco fictício com posições
+diferentes **e** discriminador `"E"`, em 8 linhas de declaração, e lê o arquivo
+dele sem nenhuma mudança em `parsing/`. É a bullet do currículo virando teste.
+
+**Ganho de brinde.** Layout que não declara nenhum `detail` agora falha ao
+carregar — antes, importaria todo arquivo "com sucesso" e zero lançamento, que é
+o silêncio mais caro que este projeto existe para impedir.
+
+**Efeito colateral que valeu.** Vários exemplos antigos de `LayoutSpec` usavam
+`record` com campos e passaram a estourar pelo motivo **errado** — falta de
+`detail`, não o offset inválido que diziam medir. Corrigidos e reconferidos por
+mutação: com a validação de offset desligada, eles voltam a falhar.
+
+## 33. Portas publicadas são configuráveis, e SSL é desligável por ambiente
+
+**Decisão.** `compose.yml` publica `${TALLY_ENGINE_PORT:-8080}` etc., e
+`force_ssl`/`assume_ssl` do console vêm de variável com default **ligado**.
+
+**Como apareceu.** Nos dois casos, subindo a pilha — nunca na suíte.
+
+A porta 8080 estava ocupada por outro serviço da máquina e o `compose up` morria
+com "port is already allocated". Porta fixa funciona em máquina limpa, e nenhuma
+máquina de dev é limpa.
+
+O SSL foi pior porque falhava **em silêncio parcial**: com `assume_ssl`, o Rails
+gera URL `https://`, e o redirect logo após a importação apontava para uma porta
+que não fala TLS. `GET` respondia 200 e a suíte passava — o fluxo só morria no
+navegador, um passo adiante. Nenhum teste seguia redirect para outro esquema.
+
+**O default continua seguro.** Quem sobe atrás de um proxy com TLS não configura
+nada; é a pilha local, que não tem terminador, que desliga explicitamente.
+
 ---
 
 ## Escopo: o que ficou de fora

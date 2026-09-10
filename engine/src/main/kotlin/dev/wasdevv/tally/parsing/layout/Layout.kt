@@ -23,6 +23,16 @@ class RecordSpec internal constructor(
     val discriminator: IntRange,
     val equalTo: String,
     val fields: List<FieldSpec>,
+    /**
+     * Este registro vira lancamento no razao, ou e so estrutura (header,
+     * trailer, rodape de totais)?
+     *
+     * Mora no LAYOUT e nao no parser de proposito. Quando isto era `equalTo ==
+     * "1"` dentro do parser, um banco cujo registro de detalhe usasse outro
+     * discriminador exigia mudar codigo -- e a promessa da DSL e que layout novo
+     * seja dado.
+     */
+    val emitsEntry: Boolean,
 ) {
     fun matches(line: String): Boolean = line.slice(discriminator) == equalTo
 }
@@ -46,9 +56,24 @@ class LayoutBuilder internal constructor(
 ) {
     private val records = mutableListOf<RecordSpec>()
 
+    /** Registro estrutural: contabilizado no arquivo, sem virar lancamento. */
     fun record(
         discriminator: IntRange,
         equalTo: String,
+        block: RecordBuilder.() -> Unit = {},
+    ) = add(discriminator, equalTo, emitsEntry = false, block = block)
+
+    /** Registro de lancamento: cada um vira uma linha do razao. */
+    fun detail(
+        discriminator: IntRange,
+        equalTo: String,
+        block: RecordBuilder.() -> Unit,
+    ) = add(discriminator, equalTo, emitsEntry = true, block = block)
+
+    private fun add(
+        discriminator: IntRange,
+        equalTo: String,
+        emitsEntry: Boolean,
         block: RecordBuilder.() -> Unit,
     ) {
         check(discriminator, "discriminador do registro '$equalTo'")
@@ -56,11 +81,23 @@ class LayoutBuilder internal constructor(
             "layout '$name': discriminador $discriminator tem ${discriminator.count()} posicoes " +
                 "mas compara com '$equalTo', de ${equalTo.length}"
         }
-        records += RecordBuilder(name, recordLength, discriminator, equalTo).apply(block).build()
+        require(records.none { it.equalTo == equalTo }) {
+            "layout '$name': discriminador '$equalTo' declarado duas vezes"
+        }
+        records +=
+            RecordBuilder(name, recordLength, discriminator, equalTo, emitsEntry)
+                .apply(block)
+                .build()
     }
 
     internal fun build(): Layout {
         require(records.isNotEmpty()) { "layout '$name' nao declara nenhum registro" }
+        // Layout que so descreve estrutura nunca produz lancamento: importaria
+        // todo arquivo com sucesso e zero linha, que e o silencio mais caro
+        // que este projeto existe para impedir.
+        require(records.any { it.emitsEntry }) {
+            "layout '$name' nao declara nenhum registro de lancamento (`detail`)"
+        }
         return Layout(name, recordLength, records.toList())
     }
 
@@ -76,6 +113,7 @@ class RecordBuilder internal constructor(
     private val recordLength: Int,
     private val discriminator: IntRange,
     private val equalTo: String,
+    private val emitsEntry: Boolean,
 ) {
     private val fields = mutableListOf<FieldSpec>()
 
@@ -91,7 +129,7 @@ class RecordBuilder internal constructor(
         fields += FieldSpec(name, at, type)
     }
 
-    internal fun build() = RecordSpec(discriminator, equalTo, fields.toList())
+    internal fun build() = RecordSpec(discriminator, equalTo, fields.toList(), emitsEntry)
 }
 
 private fun checkRange(

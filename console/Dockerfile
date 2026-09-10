@@ -10,7 +10,16 @@ RUN bundle config set --local without "development test" && bundle install --qui
 COPY . .
 # Assets no build, nao no boot: container que compila CSS ao subir demora para
 # atender a primeira requisicao e falha tarde quando falha.
-RUN SECRET_KEY_BASE=dummy-for-asset-build bundle exec rails tailwindcss:build assets:precompile
+#
+# RAILS_ENV=production e obrigatorio aqui, nao cosmetico: sem ele o Rails assume
+# development, o Bundler tenta carregar o grupo de development -- que este
+# `bundle install` justamente excluiu -- e o build morre em `debug/prelude`.
+#
+# SECRET_KEY_BASE so precisa EXISTIR para o boot do precompile passar; ele nao
+# assina nada aqui e nao vai para a imagem final. O de verdade entra por
+# ambiente, no boot.
+RUN RAILS_ENV=production SECRET_KEY_BASE=dummy-for-asset-build-only \
+    bundle exec rails tailwindcss:build assets:precompile
 
 FROM ruby:3.4-slim
 WORKDIR /app

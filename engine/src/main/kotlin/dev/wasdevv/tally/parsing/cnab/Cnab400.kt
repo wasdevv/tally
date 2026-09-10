@@ -28,8 +28,8 @@ object Cnab400 {
 
     val synthetic: Layout =
         layout("cnab400-sintetico", recordLength = RECORD_LENGTH) {
-            record(discriminator = 1..1, equalTo = HEADER) { }
-            record(discriminator = 1..1, equalTo = DETAIL) {
+            record(discriminator = 1..1, equalTo = HEADER)
+            detail(discriminator = 1..1, equalTo = DETAIL) {
                 field("bankCode", 2..4, Text)
                 field("ourNumber", 63..70, Text)
                 field("status", 109..110, Text)
@@ -37,7 +37,7 @@ object Cnab400 {
                 field("amount", 127..139, FixedDecimal(places = 2))
                 field("counterparty", 325..354, Text)
             }
-            record(discriminator = 1..1, equalTo = TRAILER) { }
+            record(discriminator = 1..1, equalTo = TRAILER)
         }
 
     private const val HEADER = "0"
@@ -103,7 +103,7 @@ object Cnab400 {
                     OccurrenceCode.ROW_UNKNOWN_RECORD_TYPE,
                     mapOf("raw" to raw.take(1)),
                 )
-        if (spec.equalTo != DETAIL) return null
+        if (!spec.emitsEntry) return null
 
         return toEntry(raw, lineNumber, spec)
     }

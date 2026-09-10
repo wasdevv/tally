@@ -89,9 +89,9 @@ Data:      2026-09-10  ·  Commit: 4e82814
 
 | Suíte | Exemplos | Tempo | Precisa de container |
 |---|---:|---:|---|
-| Motor — domínio e property | 94 | ~9 s | não |
+| Motor — domínio e property | 99 | ~9 s | não |
 | Motor — integração, API e revisão | 32 | ~21 s | sim |
-| Console — request, system, serviço | 52 | ~0,5 s | não |
+| Console — request, system, serviço | 51 | ~0,6 s | não |
 | Console — contrato contra o motor real | 8 | ~1 s | sim |
 
 O loop de TDD é a primeira linha: abaixo de 10 segundos, ou você para de rodar.

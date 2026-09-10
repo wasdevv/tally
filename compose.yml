@@ -7,7 +7,9 @@ services:
       POSTGRES_DB: tally
       POSTGRES_USER: tally
       POSTGRES_PASSWORD: ${TALLY_DB_PASSWORD:?set TALLY_DB_PASSWORD, see .env.example}
-    ports: ["5432:5432"]
+    # Porta publicada configuravel: numero fixo so funciona em maquina limpa, e
+    # nenhuma maquina de dev e limpa. O default e o documentado no README.
+    ports: ["${TALLY_DB_PORT:-5432}:5432"]
     volumes: ["engine-db:/var/lib/postgresql/data"]
     healthcheck:
       # O motor migra no boot; subir antes do banco aceitar conexao so produz
@@ -28,7 +30,7 @@ services:
       TALLY_DB_USER: tally
       TALLY_DB_PASSWORD: ${TALLY_DB_PASSWORD:?}
       TALLY_HMAC_SECRET: ${TALLY_HMAC_SECRET:?set TALLY_HMAC_SECRET, see .env.example}
-    ports: ["8080:8080"]
+    ports: ["${TALLY_ENGINE_PORT:-8080}:8080"]
 
   console:
     build:
@@ -40,10 +42,16 @@ services:
       TALLY_HMAC_SECRET: ${TALLY_HMAC_SECRET:?}
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set SECRET_KEY_BASE, see .env.example}
       RAILS_ENV: production
+      # Esta pilha serve HTTP puro em localhost -- nao ha terminador TLS aqui.
+      # Sem isto o Rails gera redirect `https://` para uma porta que nao fala
+      # TLS, e o fluxo morre no navegador logo apos a importacao. Em deploy de
+      # verdade, atras de um proxy com TLS, o default (ligado) e o certo.
+      TALLY_ASSUME_SSL: "false"
+      TALLY_FORCE_SSL: "false"
       # O console nao tem banco: sem isto o Rails de producao recusa subir por
       # nao achar configuracao que nao existe.
       RAILS_LOG_TO_STDOUT: "1"
-    ports: ["3000:3000"]
+    ports: ["${TALLY_CONSOLE_PORT:-3000}:3000"]
 
 volumes:
   engine-db:

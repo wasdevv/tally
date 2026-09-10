@@ -17,7 +17,7 @@ class LayoutSpec : StringSpec({
         val erro =
             shouldThrow<IllegalArgumentException> {
                 layout("quebrado", recordLength = 400) {
-                    record(discriminator = 1..1, equalTo = "1") {
+                    detail(discriminator = 1..1, equalTo = "1") {
                         field("amount", 395..405, Text)
                     }
                 }
@@ -29,7 +29,7 @@ class LayoutSpec : StringSpec({
     "intervalo invertido falha ao carregar o layout" {
         shouldThrow<IllegalArgumentException> {
             layout("quebrado", recordLength = 400) {
-                record(discriminator = 1..1, equalTo = "1") {
+                detail(discriminator = 1..1, equalTo = "1") {
                     field("amount", IntRange(139, 127), Text)
                 }
             }
@@ -39,7 +39,7 @@ class LayoutSpec : StringSpec({
     "posicao zero falha: o layout e 1-based como a especificacao FEBRABAN" {
         shouldThrow<IllegalArgumentException> {
             layout("quebrado", recordLength = 400) {
-                record(discriminator = 1..1, equalTo = "1") {
+                detail(discriminator = 1..1, equalTo = "1") {
                     field("bankCode", 0..3, Text)
                 }
             }
@@ -49,7 +49,7 @@ class LayoutSpec : StringSpec({
     "discriminador alem do registro falha ao carregar" {
         shouldThrow<IllegalArgumentException> {
             layout("quebrado", recordLength = 10) {
-                record(discriminator = 40..40, equalTo = "1") {
+                detail(discriminator = 40..40, equalTo = "1") {
                     field("x", 1..2, Text)
                 }
             }
@@ -59,7 +59,7 @@ class LayoutSpec : StringSpec({
     "nome de campo repetido no mesmo registro falha ao carregar" {
         shouldThrow<IllegalArgumentException> {
             layout("quebrado", recordLength = 400) {
-                record(discriminator = 1..1, equalTo = "1") {
+                detail(discriminator = 1..1, equalTo = "1") {
                     field("amount", 1..10, Text)
                     field("amount", 11..20, Text)
                 }
@@ -70,10 +70,10 @@ class LayoutSpec : StringSpec({
     "layout valido carrega e conhece seus registros" {
         val l =
             layout("ok", recordLength = 40) {
-                record(discriminator = 1..1, equalTo = "1") {
+                detail(discriminator = 1..1, equalTo = "1") {
                     field("ourNumber", 2..9, Text)
                 }
-                record(discriminator = 1..1, equalTo = "9") { }
+                record(discriminator = 1..1, equalTo = "9")
             }
 
         l.name shouldBe "ok"

@@ -12,11 +12,16 @@ English and Brazilian Portuguese.
 ## Run it
 
 ```bash
-cp .env.example .env      # fill both secrets: openssl rand -hex 32
+cp .env.example .env      # fill the secrets: openssl rand -hex 32
 docker compose up
 ```
 
 Console at <http://localhost:3000>, engine API at <http://localhost:8080>.
+If either port is taken on your machine, set `TALLY_CONSOLE_PORT` or
+`TALLY_ENGINE_PORT` in `.env` — no need to edit the compose file.
+
+Verified from a clean build: import a return file, watch the ledger balance,
+resolve a review. Every line accounted for, in both languages.
 
 ## Design decisions
 
@@ -41,7 +46,7 @@ median of five runs, and each one is reproducible by the command recorded in
 | Ingestion, 100k lines, streaming | 25,663 lines/s at 34 MB peak heap |
 | Same load read fully into memory | 24,306 lines/s at 127 MB peak heap |
 | Indexing receivables by title | 2.3× throughput, measured before and after |
-| Test suites | 94 domain + property · 32 integration · 60 console |
+| Test suites | 99 domain + property · 32 integration · 59 console |
 
 The streaming win is **memory, not speed** — the throughput difference is
 inside the run-to-run noise. That is what the measurement said, so that is what

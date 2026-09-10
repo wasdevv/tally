@@ -21,11 +21,16 @@ Rails.application.configure do
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
-
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # SSL ligado por default, e desligavel por ambiente.
+  #
+  # O default seguro fica onde estava: quem sobe isto atras de um proxy com TLS
+  # nao precisa configurar nada. Mas a pilha local do `docker compose` NAO tem
+  # terminador TLS, e com `assume_ssl` o Rails passa a gerar URL `https://` --
+  # o redirect depois da importacao apontava para uma porta que nao fala TLS, e
+  # o navegador morria ali. Erro que so aparece com a pilha de pe, nunca na
+  # suite: a suite nao segue redirect para outro esquema.
+  config.assume_ssl = ENV.fetch("TALLY_ASSUME_SSL", "true") == "true"
+  config.force_ssl = ENV.fetch("TALLY_FORCE_SSL", "true") == "true"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
