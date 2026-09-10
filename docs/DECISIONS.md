@@ -489,6 +489,83 @@ inglês o mesmo template serviria; foi o português que exigiu a separação, e 
 exatamente o tipo de coisa que só aparece quando existe um segundo idioma de
 verdade em vez de uma promessa de que ele caberia.
 
+## 35. O workflow mora na raiz do repositório, não em `tally/`
+
+**Decisão.** `.github/workflows/tally.yml` na raiz, com `paths: ["tally/**"]`.
+
+**Como apareceu.** O arquivo estava em `tally/.github/workflows/`, onde o GitHub
+**não lê**. Três jobs — um deles subindo motor de verdade para o contrato — que
+nunca executaram e não executariam.
+
+**É a própria regra deste documento sendo violada.** "Gate que não barra não é
+gate" estava escrito aqui enquanto o gate não podia sequer rodar. Configuração
+inerte é pior que ausente, porque parece pronta.
+
+**Dois defeitos junto, no job de contrato.** `engine/build/libs/*.jar` casa
+**dois** arquivos — `bootJar` também produz `engine-plain.jar` — e `java -jar`
+teria falhado com um erro que não parece ter nada a ver com o glob. E o processo
+precisava de `disown` para sobreviver ao fim do step: cada step é um shell
+próprio.
+
+## 36. Atalhos de teclado levam a links que já existem
+
+**Decisão.** `j`/`k`, `g`/`G`, `Enter`/`r`, `?`. Cada um dispara um link que já
+está na página.
+
+**Por quê essa restrição.** Atalho é caminho mais curto, nunca o único: quem usa
+mouse chega no mesmo lugar, e quem usa leitor de tela também. O foco vai na
+**linha** (`tabIndex = -1` mais `focus()`), não num link dentro dela — focar o
+link só funcionava nas linhas com botão de revisão, e nas outras o foco ficava no
+`body`, deixando o leitor de tela para trás.
+
+**O que a verificação no navegador pegou** e nenhum spec pegaria: o `?` inerte
+porque o painel de ajuda estava **fora** do elemento do controller — alvo fora do
+escopo simplesmente não existe para o Stimulus, então `hasHelpTarget` era falso,
+a tecla chegava, o handler rodava e nada acontecia.
+
+**`console/bin/keyboard-check.rb`** roda 12 verificações num Chromium de verdade.
+Fora do CI, porque exige navegador e a pilha de pé — mas versionado, para não
+virar "eu testei na mão uma vez".
+
+## 37. O drawer decide o alvo do link no cliente, porque CSS não basta
+
+**Decisão.** Em ≥1024px a revisão abre num Turbo Frame ao lado da tabela; abaixo
+disso o mesmo link navega para a página inteira. Quem troca o alvo é um Stimulus
+controller lendo `matchMedia`.
+
+**Por quê não só CSS.** Esconder o frame com `display: none` **não impede** o
+Turbo de navegar dentro dele. Em tela estreita o operador clicava em "Revisar", o
+frame carregava atrás do `none`, e a tela não mudava — nada acontecia, sem erro
+nenhum. É o pior modo de falha de interface, e só apareceu medindo em 375px.
+
+**Uma view só.** `reviews/show` se envolve no mesmo frame, então serve à página
+inteira e ao drawer sem duplicar markup — duas cópias divergiriam no primeiro
+ajuste.
+
+## 38. A decisão responde em Turbo Stream, e o HTML continua inteiro
+
+**Decisão.** `format.turbo_stream` remove a linha resolvida e troca o sumário;
+`format.html` continua redirecionando para a fila.
+
+**Por quê manter os dois.** O Stream é caminho mais curto, não o único: um
+analista com JS bloqueado ainda precisa conciliar. Há spec para os dois caminhos.
+
+**O id da linha é `entry-<lote>-<linha>`.** `dom_id` do Rails espera um model
+ActiveRecord, e aqui não há um — o razão mora no motor e chega como Hash. O par
+(lote, linha) é a chave natural, a mesma que o banco usa como `UNIQUE`.
+
+## 39. O OpenAPI é conferido contra os controllers, não escrito de memória
+
+**Decisão.** `docs/openapi.yml` existe, e `openapi_spec.rb` compara as rotas
+documentadas com as que os controllers realmente expõem.
+
+**Por quê o teste.** Contrato que envelhece em silêncio não é contrato, é
+documentação errada — pior que nenhuma, porque alguém confia nela. Conferido por
+mutação: rota nova no controller sem entrada no documento reprova.
+
+**Divergência registrada.** O plano falava em "seis endpoints REST". São
+**sete** operações. O número está no teste, não na prosa.
+
 ---
 
 ## Escopo: o que ficou de fora

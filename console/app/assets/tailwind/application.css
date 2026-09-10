@@ -195,3 +195,10 @@ body {
    */
   position: relative;
 }
+
+/* A linha sob o cursor de teclado. Contorno e nao so fundo: em cima da listra
+   greenbar um fundo sozinho quase nao se distingue da propria listra. */
+.ledger tbody tr[data-current] {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}

@@ -50,6 +50,13 @@ module LedgerHelper
   # ver um identificador do que ver uma frase com um buraco.
   def field_label(field) = t("field.#{field}", default: field)
 
+  # Id estavel da linha, derivado de lote + numero da linha fisica.
+  #
+  # `dom_id` do Rails espera um model ActiveRecord, e aqui nao ha um: o razao
+  # mora no motor e chega como Hash. O par (lote, linha) e a chave natural --
+  # a mesma que o banco usa como UNIQUE.
+  def dom_id_for_entry(batch_id, entry) = "entry-#{batch_id}-#{entry['line']}"
+
   def status_label(status) = t("status.#{status}", default: status)
 
   def status_glyph(status) = t("status_glyph.#{status}", default: "•")

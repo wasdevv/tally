@@ -27,6 +27,13 @@ pt-BR:
       none: "—"
       review: Revisar
       empty_filter: Nenhuma linha neste estado.
+      shortcuts:
+        title: "Atalhos de teclado"
+        move: Linha seguinte / anterior
+        open: Abrir a revisão da linha selecionada
+        ends: Primeira / última linha
+        help: Mostrar ou esconder esta lista
+        hint: "Tecle ? para ver os atalhos"
 
   reviews:
     show:

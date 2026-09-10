@@ -121,3 +121,14 @@ tasks.register<JavaExec>("measure") {
     // nao o programa.
     jvmArgs("-Xms64m", "-Xmx1g")
 }
+
+// A medicao que inclui o banco. Separada da outra de proposito: uma mede parser
+// + casamento, a outra mede o sistema. Confundir as duas infla a bullet.
+tasks.register<JavaExec>("measurePersisted") {
+    description = "Mede ingestao ponta a ponta, com o INSERT no caminho."
+    group = "verification"
+    classpath = sourceSets["integrationTest"].runtimeClasspath
+    mainClass.set("dev.wasdevv.tally.measurement.PersistedIngestionMeasurement")
+    jvmArgs("-Xms64m", "-Xmx1g")
+    systemProperty("api.version", System.getenv("DOCKER_API_VERSION") ?: "1.44")
+}

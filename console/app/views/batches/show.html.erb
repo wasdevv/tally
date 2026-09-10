@@ -25,26 +25,15 @@
 </div>
 
 <%# Estado nunca so por cor: glifo proprio ao lado do numero. %>
-<nav class="mt-6 flex flex-wrap gap-x-1 text-sm" style="border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule)">
-  <%= link_to batch_path(@batch["id"]), class: "chip",
-              "aria-current": (@status.blank? ? "true" : nil) do %>
-    <span><%= t("batches.show.all") %></span>
-    <span class="tabular"><%= @batch["lineCount"] %></span>
-  <% end %>
+<%= render "batches/summary", batch: @batch, status: @status %>
 
-  <% %w[MATCHED NEEDS_REVIEW UNMATCHED REJECTED].each do |status| %>
-    <% count = @batch.dig("counts", status).to_i %>
-    <%= link_to batch_path(@batch["id"], status: status), class: "chip",
-                "aria-current": (@status == status ? "true" : nil),
-                style: ("opacity: .55" if count.zero?) do %>
-      <span aria-hidden="true" style="color: var(--<%= status_token(status) %>)"><%= status_glyph(status) %></span>
-      <span><%= status_label(status) %></span>
-      <span class="tabular"><%= count %></span>
-    <% end %>
-  <% end %>
-</nav>
+<p class="mt-4 text-[12.8px]" style="color: color-mix(in srgb, var(--ink) 55%, transparent)">
+  <%= t("batches.show.shortcuts.hint") %>
+</p>
 
-<div class="scroll-x mt-6">
+<div data-controller="ledger drawer">
+  <div class="lg:flex lg:items-start lg:gap-6">
+  <div class="scroll-x mt-2 lg:flex-1">
   <table class="ledger w-full text-[14px] md:min-w-[40rem] lg:min-w-[46rem]">
     <thead>
       <%#
@@ -65,7 +54,8 @@
 
     <tbody>
       <% @entries.each do |entry| %>
-        <tr class="state-<%= entry["status"] %>">
+        <tr id="<%= dom_id_for_entry(@batch["id"], entry) %>"
+            class="state-<%= entry["status"] %>" data-ledger-target="row" tabindex="-1">
           <td class="tabular">
             <span aria-hidden="true" style="color: var(--<%= status_token(entry["status"]) %>)"><%= status_glyph(entry["status"]) %></span>
             <span class="sr-only"><%= status_label(entry["status"]) %></span>
@@ -92,7 +82,8 @@
             <% if entry["status"] == "NEEDS_REVIEW" %>
               <%= link_to t("batches.show.review"),
                           batch_review_path(@batch["id"], entry["line"]),
-                          class: "btn btn-quiet", style: "min-height: 2rem; padding: 0 .75rem" %>
+                          class: "btn btn-quiet", style: "min-height: 2rem; padding: 0 .75rem",
+                          data: { review: true, drawer_target: "link" } %>
             <% end %>
           </td>
         </tr>
@@ -104,3 +95,29 @@
 <% if @entries.empty? %>
   <p class="panel mt-6 p-6 text-center"><%= t("batches.show.empty_filter") %></p>
 <% end %>
+
+  <%#
+    A lista de atalhos vive na pagina, escondida, e nao num tooltip: `?` mostra,
+    Escape esconde. Quem nao souber que existe atalho continua clicando -- cada
+    um deles leva a um link que ja esta na tabela.
+  %>
+  <%#
+    O drawer: em >=1024px a revisao abre AQUI, com a tabela continuando visivel
+    ao lado -- o operador nao perde o contexto do que estava varrendo. Abaixo
+    disso o frame nao existe e o mesmo link navega para a pagina inteira.
+  %>
+  <turbo-frame id="review-drawer" data-drawer-target="frame"
+               class="hidden lg:block lg:w-[26rem] lg:shrink-0"></turbo-frame>
+  </div>
+
+  <div data-ledger-target="help" hidden
+       class="panel mt-4 max-w-[52rem] p-4 text-[14px]">
+    <p class="font-medium"><%= t("batches.show.shortcuts.title") %></p>
+    <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+      <% { "j / k" => :move, "Enter / r" => :open, "g / G" => :ends, "?" => :help }.each do |keys, key| %>
+        <dt class="tabular font-medium"><%= keys %></dt>
+        <dd><%= t("batches.show.shortcuts.#{key}") %></dd>
+      <% end %>
+    </dl>
+  </div>
+</div>

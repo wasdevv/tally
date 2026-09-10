@@ -1,0 +1,10 @@
+<%# A linha resolvida some da fila; o contador e substituido com o valor novo. %>
+<%= turbo_stream.remove @entry_id %>
+<%= turbo_stream.replace "batch-summary" do %>
+  <%= render "batches/summary", batch: @batch, status: "NEEDS_REVIEW" %>
+<% end %>
+<%= turbo_stream.update "flash" do %>
+  <p class="panel px-4 py-3" role="status" style="border-left: 3px solid var(--matched)">
+    <%= flash.now[:notice] %>
+  </p>
+<% end %>

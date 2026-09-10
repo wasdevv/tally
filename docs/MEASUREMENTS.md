@@ -55,6 +55,35 @@ E o número de heap importa porque ele é o que decide se o arquivo de 2 GB do
 cliente sobe ou derruba o processo: em memória, o pico cresce com o arquivo; em
 streaming, não.
 
+## Ingestão ponta a ponta — com o INSERT no caminho
+
+A medição acima para **antes do banco**: ela mede parser mais casamento. Esta
+inclui transação, advisory lock e escrita — e é ela que descreve o que o sistema
+faz de fato.
+
+```
+Comando:   ./gradlew measurePersisted
+Máquina:   AMD Ryzen 7 5800XT (16 threads), 15 GB RAM, WSL2 sobre Linux 6.6
+Banco:     PostgreSQL 16 em container (Testcontainers), transação única
+Data:      2026-09-10  ·  Commit: f3175bc
+Método:    5 execuções, descartadas as 2 primeiras, mediana das 3, banco limpo a cada execução
+```
+
+| | Vazão |
+|---|---:|
+| Só parser e casamento | 25.663 linhas/s |
+| **Com persistência** | **9.405 linhas/s** |
+
+**O banco custa 2,7× do tempo total.** É o número honesto para citar: quem
+disser "importa a 25 mil linhas/s" está descrevendo a metade do trabalho que não
+toca disco.
+
+**Uma armadilha que valeu registrar.** A primeira versão desta medição reusava o
+mesmo digest a cada execução — e a idempotência devolvia o lote pronto sem
+gravar nada. O resultado teria sido espetacular e teria medido exatamente nada.
+Cada execução gera um digest próprio, e há um `check` de que as 100.000 linhas
+foram mesmo gravadas.
+
 ## Índice por nosso número — antes e depois
 
 O primeiro perfil mostrou vazão idêntica nas duas estratégias e **abaixo do
@@ -91,8 +120,9 @@ Data:      2026-09-10  ·  Commit: 4e82814
 |---|---:|---:|---|
 | Motor — domínio e property | 99 | ~9 s | não |
 | Motor — integração, API e revisão | 32 | ~21 s | sim |
-| Console — request, system, serviço | 51 | ~0,6 s | não |
-| Console — contrato contra o motor real | 8 | ~1 s | sim |
+| Console — request, system, serviço | 57 | ~0,9 s | não |
+| Console — contrato contra o motor real | 11 | ~1,8 s | sim |
+| Navegador — atalhos e drawer (`bin/*-check.rb`) | 12 + 7 | ~10 s | sim, e Chromium |
 
 O loop de TDD é a primeira linha: abaixo de 10 segundos, ou você para de rodar.
 
@@ -103,8 +133,6 @@ As propriedades executam **1.000 casos gerados** cada nas duas de conservação,
 
 Escrito porque lacuna reconhecida vale mais que número inventado:
 
-- **Vazão de ponta a ponta com escrita no banco.** A medição acima para antes do
-  `INSERT`. O número com PostgreSQL no caminho é outro e ainda não foi tomado.
 - **Plano de consulta do razão.** Nenhum índice de desempenho foi criado, então
   não há `EXPLAIN (ANALYZE, BUFFERS)` antes e depois para registrar. Os índices
   que existem no esquema estão lá por **correção** — são restrições, não

@@ -38,12 +38,12 @@
       </nav>
     </header>
 
-    <% if flash[:notice] %>
-      <div class="mx-auto max-w-6xl px-4 pt-4">
+    <div id="flash" class="mx-auto max-w-6xl px-4 <%= "pt-4" if flash[:notice] %>">
+      <% if flash[:notice] %>
         <p class="panel px-4 py-3" role="status"
            style="border-left: 3px solid var(--matched)"><%= flash[:notice] %></p>
-      </div>
-    <% end %>
+      <% end %>
+    </div>
 
     <main class="mx-auto max-w-6xl px-4 py-8">
       <%= yield %>

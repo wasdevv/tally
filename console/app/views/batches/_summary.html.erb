@@ -1,0 +1,18 @@
+<nav id="batch-summary" class="mt-6 flex flex-wrap gap-x-1 text-sm" style="border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule)">
+  <%= link_to batch_path(batch["id"]), class: "chip",
+              "aria-current": (status.blank? ? "true" : nil) do %>
+    <span><%= t("batches.show.all") %></span>
+    <span class="tabular"><%= batch["lineCount"] %></span>
+  <% end %>
+
+  <% %w[MATCHED NEEDS_REVIEW UNMATCHED REJECTED].each do |status| %>
+    <% count = batch.dig("counts", status).to_i %>
+    <%= link_to batch_path(batch["id"], status: status), class: "chip",
+                "aria-current": (status == status ? "true" : nil),
+                style: ("opacity: .55" if count.zero?) do %>
+      <span aria-hidden="true" style="color: var(--<%= status_token(status) %>)"><%= status_glyph(status) %></span>
+      <span><%= status_label(status) %></span>
+      <span class="tabular"><%= count %></span>
+    <% end %>
+  <% end %>
+</nav>

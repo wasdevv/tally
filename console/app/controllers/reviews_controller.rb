@@ -13,8 +13,23 @@ class ReviewsController < ApplicationController
     # de id vazio, que nao existe.
     engine.decide(params[:batch_id], params[:line], params[:receivable_id].presence)
 
-    redirect_to batch_path(params[:batch_id], status: "NEEDS_REVIEW"),
-                notice: t("flash.decided")
+    respond_to do |format|
+      # Turbo Stream: a linha resolvida SAI da fila e o sumario e substituido,
+      # sem recarregar a tabela inteira. O que o operador percebe e a proxima
+      # linha subindo -- que e a informacao real da acao dele.
+      format.turbo_stream do
+        @batch = engine.batch(params[:batch_id])
+        @entry_id = helpers.dom_id_for_entry(params[:batch_id], "line" => params[:line])
+        flash.now[:notice] = t("flash.decided")
+      end
+
+      # Sem JS o fluxo continua inteiro: redirect para a fila, como antes. O
+      # atalho e o Stream sao caminho mais curto, nunca o unico.
+      format.html do
+        redirect_to batch_path(params[:batch_id], status: "NEEDS_REVIEW"),
+                    notice: t("flash.decided")
+      end
+    end
   end
 
   private

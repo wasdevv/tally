@@ -27,6 +27,13 @@ en:
       none: "—"
       review: Review
       empty_filter: No lines in this state.
+      shortcuts:
+        title: "Keyboard shortcuts"
+        move: Next / previous line
+        open: Open the review for the selected line
+        ends: First / last line
+        help: Show or hide this list
+        hint: "Press ? for keyboard shortcuts"
 
   reviews:
     show:

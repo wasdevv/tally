@@ -1,5 +1,11 @@
 <% content_for :title, t("reviews.show.title", line: @entry["line"]) %>
 
+<%#
+  O mesmo arquivo serve a pagina inteira e o drawer. Dentro do frame o Turbo
+  troca so este pedaco; fora dele, e uma pagina como qualquer outra. Nao ha
+  view duplicada, entao as duas nao podem divergir.
+%>
+<turbo-frame id="review-drawer">
 <p><%= link_to t("reviews.show.back"), batch_path(@batch["id"], status: "NEEDS_REVIEW"), class: "min-h-11 inline-flex items-center" %></p>
 
 <h1 class="mt-2 text-[25px] font-semibold leading-tight">
@@ -55,3 +61,4 @@
     <%= form.submit t("reviews.show.submit"), class: "btn btn-primary w-full sm:w-auto" %>
   </div>
 <% end %>
+</turbo-frame>

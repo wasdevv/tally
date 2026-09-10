@@ -1,0 +1,342 @@
+openapi: 3.1.0
+
+info:
+  title: Tally engine
+  version: "1.0"
+  description: |
+    Conciliação de arquivos de retorno bancário contra recebíveis esperados.
+
+    Duas regras valem em toda esta API, e são o desenho do sistema:
+
+    1. **O motor nunca emite texto para humano.** Erros e ocorrências saem como
+       código estável mais parâmetros; quem tem os idiomas é o console. Um
+       terceiro idioma não toca em uma linha de Kotlin.
+    2. **Dinheiro é inteiro de centavos.** Nunca `"R$ 1.234,56"`, nunca ponto
+       flutuante. Formatar é trabalho da borda.
+
+    O contrato é verificado: `console/spec/contract/` roda contra um motor de
+    verdade no CI. Este documento descreve o que aquele job exercita.
+
+servers:
+  - url: http://localhost:8080
+    description: docker compose
+
+security:
+  - hmac: []
+
+paths:
+  /api/batches:
+    get:
+      summary: Lista os lotes importados, do mais recente para o mais antigo
+      responses:
+        "200":
+          description: Lotes
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/BatchSummary" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+    post:
+      summary: Importa um arquivo de retorno
+      description: |
+        Idempotente pelo digest do conteúdo: reprocessar o mesmo arquivo devolve
+        **200** com `alreadyImported: true` e o lote que já existe, em vez de
+        criar um segundo. O nome do arquivo não faz parte da identidade.
+
+        `X-Tally-Content-Sha256` é obrigatório aqui e entra no material
+        assinado; o servidor o confere contra os bytes recebidos.
+      parameters:
+        - $ref: "#/components/parameters/ContentDigest"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+                filename:
+                  type: string
+                  description: Sobrescreve o nome vindo do multipart.
+      responses:
+        "201":
+          description: Importado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportResponse" }
+        "200":
+          description: Já importado antes; devolve o lote existente
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportResponse" }
+        "400":
+          description: |
+            Arquivo recusado na porta. `code` é um de `FILE_EMPTY`,
+            `FILE_TOO_LARGE`, `FILE_TYPE_NOT_ACCEPTED`, `FILE_NOT_TEXT` ou
+            `CONTENT_DIGEST_MISMATCH`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/batches/{id}:
+    get:
+      summary: Um lote
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        "200":
+          description: Lote
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BatchSummary" }
+        "404":
+          description: "`BATCH_NOT_FOUND`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/batches/{id}/entries:
+    get:
+      summary: As linhas do razão
+      description: |
+        Ordem: pendências primeiro (`NEEDS_REVIEW`, `UNMATCHED`, `REJECTED`) e
+        depois a linha física. É ordem explícita, não alfabética do enum — por
+        acaso `MATCHED` viria primeiro no alfabeto, que é o contrário do útil.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/EntryStatus" }
+      responses:
+        "200":
+          description: Linhas
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/LedgerEntry" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/batches/{id}/entries/{line}/decision:
+    post:
+      summary: Registra a decisão humana sobre uma linha em revisão
+      description: |
+        `receivableId: null` é "nenhum destes": a linha vai para `UNMATCHED` e
+        **continua no razão**. Não existe descartar linha — a conservação é
+        medida contra o arquivo, e um operador não pode fazê-la fechar apagando.
+
+        A transição só vale a partir de `NEEDS_REVIEW`, e a condição está no
+        próprio `UPDATE`: duas abas decidindo a mesma linha, a segunda recebe
+        409.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: line, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                receivableId:
+                  type: [string, "null"]
+                  description: Recebível escolhido, ou `null` para "nenhum destes".
+      responses:
+        "200":
+          description: Decisão registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { decided: { type: boolean } }
+        "400":
+          description: "`RECEIVABLE_NOT_FOUND`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "404":
+          description: "`ENTRY_NOT_FOUND`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "409":
+          description: |
+            `ENTRY_NOT_UNDER_REVIEW`. A requisição está bem formada; o **estado**
+            mudou debaixo dela.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/receivables:
+    get:
+      summary: Recebíveis esperados
+      responses:
+        "200":
+          description: Recebíveis
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Receivable" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+    post:
+      summary: Cadastra ou atualiza recebíveis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: array, items: { $ref: "#/components/schemas/Receivable" } }
+      responses:
+        "201":
+          description: Gravados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { saved: { type: integer } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  securitySchemes:
+    hmac:
+      type: apiKey
+      in: header
+      name: X-Tally-Signature
+      description: |
+        HMAC-SHA256 sobre `timestamp \n método \n caminho?query \n digest`, em
+        hex. O caminho inclui a query string: `?status=` seleciona o que o
+        operador vê, e o que é interceptável é modificável.
+
+        `digest` é o SHA-256 do corpo em hex. Em requisição JSON o servidor o
+        calcula dos bytes crus, antes de qualquer desserialização; em upload
+        multipart ele vem em `X-Tally-Content-Sha256` e é conferido contra os
+        bytes recebidos.
+
+        Requer também `X-Tally-Timestamp` (epoch em segundos). Fora da janela de
+        5 minutos a mesma assinatura deixa de valer — uma requisição capturada
+        não pode ser reenviada amanhã. A comparação é em tempo constante.
+
+  parameters:
+    ContentDigest:
+      name: X-Tally-Content-Sha256
+      in: header
+      required: true
+      schema: { type: string }
+      description: SHA-256 do arquivo, em hex. Entra no material assinado.
+
+  responses:
+    Unauthorized:
+      description: |
+        `UNAUTHORIZED`, com `params.reason` em `missing_signature`,
+        `malformed_timestamp`, `expired_timestamp`, `malformed_signature`,
+        `bad_signature`, `missing_content_digest`, `content_digest_mismatch` ou
+        `body_too_large`.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+
+  schemas:
+    EntryStatus:
+      type: string
+      enum: [MATCHED, NEEDS_REVIEW, UNMATCHED, REJECTED]
+      description: |
+        Os quatro destinos. Toda linha do arquivo termina em exatamente um, e a
+        soma das quantidades é a contagem de linhas — a invariante central.
+
+    BatchSummary:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        filename: { type: string }
+        layoutName: { type: string }
+        lineCount: { type: integer }
+        totalCents:
+          type: integer
+          format: int64
+          description: Soma das linhas válidas. Rejeitadas contam na cardinalidade e não na soma.
+        importedAt: { type: string, format: date-time }
+        counts:
+          type: object
+          additionalProperties: { type: integer }
+          description: Uma chave por `EntryStatus`, sempre as quatro.
+        unreconciledCents:
+          type: integer
+          format: int64
+          description: O que ainda não fechou — `NEEDS_REVIEW` mais `UNMATCHED`.
+
+    LedgerEntry:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        line: { type: integer, description: Número da linha física no arquivo. }
+        status: { $ref: "#/components/schemas/EntryStatus" }
+        ourNumber: { type: [string, "null"] }
+        amountCents:
+          type: [integer, "null"]
+          format: int64
+          description: |
+            `null` em linha rejeitada — o parser não conseguiu ler. **Não é
+            zero**, e a diferença importa: zero afirmaria que o banco mandou
+            zero.
+        paidAt: { type: [string, "null"], format: date }
+        counterparty: { type: [string, "null"] }
+        matchedReceivableId: { type: [string, "null"] }
+        matchReason:
+          type: [string, "null"]
+          enum: [EXACT, WITHIN_TOLERANCE, AMOUNT_MISMATCH, AMOUNT_ONLY, AMBIGUOUS, null]
+        occurrence:
+          oneOf:
+            - $ref: "#/components/schemas/Occurrence"
+            - type: "null"
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/Receivable" }
+          description: Os candidatos que o motor não desempatou. Vazio fora de `NEEDS_REVIEW`.
+        decidedAt: { type: [string, "null"], format: date-time }
+
+    Occurrence:
+      type: object
+      description: |
+        O motivo de a linha ter sido rejeitada. **Nunca uma frase** — o console
+        renderiza `occurrence.<code>` com estes parâmetros.
+      properties:
+        line: { type: integer }
+        code:
+          type: string
+          enum:
+            - ROW_TOO_SHORT
+            - ROW_TOO_LONG
+            - ROW_INVALID_DATE
+            - ROW_INVALID_AMOUNT
+            - ROW_AMOUNT_OUT_OF_RANGE
+            - ROW_MISSING_FIELD
+            - ROW_UNKNOWN_RECORD_TYPE
+            - ROW_INVALID_ENCODING
+        params:
+          type: object
+          additionalProperties: { type: string }
+          description: |
+            `field` é o nome do campo no layout e também é traduzido pelo
+            console; `raw` é o dado literal do arquivo e passa cru, porque é o
+            que o operador confere contra o papel.
+
+    Receivable:
+      type: object
+      required: [id, ourNumber, amountCents, dueDate, payer]
+      properties:
+        id: { type: string }
+        ourNumber: { type: string }
+        amountCents: { type: integer, format: int64 }
+        dueDate: { type: string, format: date }
+        payer: { type: string }
+
+    ApiError:
+      type: object
+      description: Erro também é código, nunca prosa vazando do backend para a tela.
+      properties:
+        code: { type: string }
+        params:
+          type: object
+          additionalProperties: { type: string }
