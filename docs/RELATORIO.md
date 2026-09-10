@@ -195,6 +195,8 @@ contenção (o teste de corrida prova *correção*, não throughput).
 ## 7. Bullets para o currículo
 
 Os colchetes do rascunho original estão preenchidos **só onde houve medição**.
+[BULLETS.md](BULLETS.md) traz cada uma com a evidência ao lado, a pergunta de
+entrevista que ela convida, e o que **não** afirmar.
 
 > **Tally** — Motor de conciliação bancária em Kotlin e Spring Boot sobre
 > PostgreSQL 16, ingerindo retornos CNAB 400 e CSV e casando-os contra
@@ -234,7 +236,7 @@ Os colchetes do rascunho original estão preenchidos **só onde houve medição*
 >
 > Mantenho o reprocessamento seguro sob concorrência com digest SHA-256 atrás de
 > índice único e advisory lock por arquivo, verificado por 8 corrotinas
-> disputando o mesmo arquivo e gravando 100 mil linhas uma única vez.
+> disputando o mesmo arquivo contra PostgreSQL real e produzindo um único lote.
 >
 > Mantenho o motor livre de texto para humano: ele emite códigos estáveis com
 > parâmetros e o console Rails os renderiza, então um terceiro idioma não toca
