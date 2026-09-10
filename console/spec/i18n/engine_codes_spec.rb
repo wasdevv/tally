@@ -63,6 +63,33 @@ RSpec.describe "Codigos do motor" do
     expect(faltando).to eq([])
   end
 
+  # O nome do campo e PARAMETRO da ocorrencia, e escapou da regra por um tempo:
+  # a tela mostrava "data invalida em paidAt", identificador de maquina cru no
+  # meio de prosa em portugues. Aqui os nomes saem do LAYOUT (que e dado) e cada
+  # um precisa de rotulo nos dois idiomas.
+  it "todo nome de campo que o motor pode emitir tem rotulo nos dois idiomas" do
+    layouts = [
+      Rails.root.join("../engine/src/main/kotlin/dev/wasdevv/tally/parsing/cnab/Cnab400.kt"),
+      Rails.root.join("../engine/src/main/kotlin/dev/wasdevv/tally/parsing/csv/CsvParser.kt")
+    ].map(&:cleanpath)
+
+    fields = layouts.flat_map { |path|
+      source = path.read
+      source.scan(/field\("([a-zA-Z_]+)"/).flatten +
+        source.scan(/Column: String = "([a-z_]+)"/).flatten
+    }.uniq
+
+    expect(fields).not_to be_empty
+
+    faltando = fields.flat_map do |field|
+      I18n.available_locales.filter_map do |locale|
+        "#{locale}: field.#{field}" unless I18n.exists?("field.#{field}", locale)
+      end
+    end
+
+    expect(faltando).to eq([])
+  end
+
   # Glifo repetido derruba a distincao sem cor -- o motivo de o glifo existir.
   it "cada estado tem um glifo diferente dos outros" do
     glifos = codes_in("EntryStatus").map { |status| I18n.t("status_glyph.#{status}") }

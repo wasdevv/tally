@@ -461,6 +461,34 @@ navegador, um passo adiante. Nenhum teste seguia redirect para outro esquema.
 **O default continua seguro.** Quem sobe atrás de um proxy com TLS não configura
 nada; é a pilha local, que não tem terminador, que desliga explicitamente.
 
+## 34. O nome do campo também é traduzido, não só o código
+
+**Decisão.** O parâmetro `field` da ocorrência passa por `field.*` antes de
+entrar na frase. `paidAt` vira "data de pagamento" / "payment date".
+
+**Como apareceu.** Olhando a tela: *"Linha 6: data inválida em **paidAt**
+(999999)"*. Identificador camelCase inglês no meio de prosa em português — o
+mesmo vazamento que `ROW_INVALID_DATE` na tela seria, e no ponto exato que o
+projeto vende como sua decisão mais afiada.
+
+**A regra completa, então.** O motor emite código **e parâmetros**, e nenhum dos
+dois é texto para humano. Um parâmetro que é identificador de máquina precisa de
+tradução como o código precisa; só `raw` e `line` passam crus, porque são o dado
+literal do arquivo — é isso que o operador quer conferir contra o papel.
+
+**Gate.** `engine_codes_spec` agora lê os nomes de campo dos **layouts** (que
+são dado) e exige rótulo nos dois idiomas. Conferido por mutação: campo novo no
+layout sem tradução reprova. E a spec de vazamento passou a afirmar que
+`paidAt` não aparece na página, em nenhum idioma.
+
+**Efeito de segunda ordem: gênero.** Com o campo liderando a frase, o português
+precisa concordar — "data de pagamento **inválida**" contra "valor
+**inválido**". Um template único não concorda com os dois, mas cada **código**
+já sabe de que tipo de campo fala, então cada um carrega a sua flexão. Em
+inglês o mesmo template serviria; foi o português que exigiu a separação, e é
+exatamente o tipo de coisa que só aparece quando existe um segundo idioma de
+verdade em vez de uma promessa de que ele caberia.
+
 ---
 
 ## Escopo: o que ficou de fora

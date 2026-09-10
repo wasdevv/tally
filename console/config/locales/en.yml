@@ -74,13 +74,26 @@ en:
     AMBIGUOUS: More than one candidate
 
   # Chave = codigo do motor. O motor emite o codigo; o texto vive aqui.
+
+  # O motor nomeia o campo em identificador de maquina (`paidAt`). Traduzir isso
+  # e a mesma regra que vale para o codigo da ocorrencia: identificador nao vai
+  # para a tela do operador.
+  field:
+    amount: amount
+    bankCode: bank code
+    counterparty: counterpart
+    ourNumber: our number
+    paidAt: payment date
+    status: status
+    our_number: our number
+    paid_at: payment date
   occurrence:
     ROW_TOO_SHORT: "Line %{line}: record is shorter than the layout (%{length} characters)"
     ROW_TOO_LONG: "Line %{line}: record is longer than the layout (%{length} characters)"
-    ROW_INVALID_DATE: "Line %{line}: invalid date in %{field} (%{raw})"
-    ROW_INVALID_AMOUNT: "Line %{line}: invalid amount in %{field} (%{raw})"
-    ROW_AMOUNT_OUT_OF_RANGE: "Line %{line}: amount out of range in %{field} (%{raw})"
-    ROW_MISSING_FIELD: "Line %{line}: required field %{field} is blank"
+    ROW_INVALID_DATE: "Line %{line}: invalid %{field} (%{raw})"
+    ROW_INVALID_AMOUNT: "Line %{line}: invalid %{field} (%{raw})"
+    ROW_AMOUNT_OUT_OF_RANGE: "Line %{line}: %{field} out of range (%{raw})"
+    ROW_MISSING_FIELD: "Line %{line}: %{field} is blank"
     ROW_UNKNOWN_RECORD_TYPE: "Line %{line}: unknown record type (%{raw})"
     ROW_INVALID_ENCODING: "Line %{line}: invalid character encoding in %{field}"
 

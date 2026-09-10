@@ -41,7 +41,7 @@ RSpec.describe "Fluxo de conciliacao", type: :system do
 
     click_link "Rejected"
 
-    expect(page).to have_content("Line 43: invalid date in paidAt (00/00/00)")
+    expect(page).to have_content("Line 43: invalid payment date (00/00/00)")
     expect(page).to have_no_content("Silva ME")
   end
 
@@ -55,7 +55,7 @@ RSpec.describe "Fluxo de conciliacao", type: :system do
 
     click_link "Rejeitado"
 
-    expect(page).to have_content("Linha 43: data inválida em paidAt (00/00/00)")
+    expect(page).to have_content("Linha 43: data de pagamento inválida (00/00/00)")
   end
 
   it "troca de idioma sem sair da pagina" do

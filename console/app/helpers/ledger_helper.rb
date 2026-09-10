@@ -37,9 +37,18 @@ module LedgerHelper
     code = occurrence["code"]
     params = (occurrence["params"] || {}).symbolize_keys
     params[:line] ||= occurrence["line"]
+    # `field` chega como identificador do motor ("paidAt"). Ele e PARAMETRO da
+    # frase, entao passa pela mesma regra do codigo: identificador de maquina
+    # nao vai para a tela. Sem isto, "data invalida em paidAt" -- ingles cru no
+    # meio de uma frase em portugues, no ponto mais visivel do projeto.
+    params[:field] = field_label(params[:field]) if params[:field]
 
     t("occurrence.#{code}", **params, default: code)
   end
+
+  # Campo desconhecido cai no proprio nome em vez de sumir: melhor o operador
+  # ver um identificador do que ver uma frase com um buraco.
+  def field_label(field) = t("field.#{field}", default: field)
 
   def status_label(status) = t("status.#{status}", default: status)
 

@@ -33,10 +33,10 @@ RSpec.describe "Lotes", type: :request do
     stub_engine(FakeEngine.new(batches: [ batch ], entries: entries))
 
     get batch_path(7)
-    expect(response.body).to include("Line 43: invalid date in paidAt (00/00/00)")
+    expect(response.body).to include("Line 43: invalid payment date (00/00/00)")
 
     get batch_path(7, locale: "pt-BR")
-    expect(response.body).to include("Linha 43: data inválida em paidAt (00/00/00)")
+    expect(response.body).to include("Linha 43: data de pagamento inválida (00/00/00)")
   end
 
   it "nao vaza o codigo cru do motor para a tela" do

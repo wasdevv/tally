@@ -73,13 +73,23 @@ pt-BR:
     AMOUNT_ONLY: Valor confere, mas o título não
     AMBIGUOUS: Mais de um candidato
 
+
+  field:
+    amount: valor
+    bankCode: código do banco
+    counterparty: contraparte
+    ourNumber: nosso número
+    paidAt: data de pagamento
+    status: situação
+    our_number: nosso número
+    paid_at: data de pagamento
   occurrence:
     ROW_TOO_SHORT: "Linha %{line}: registro menor que o layout (%{length} caracteres)"
     ROW_TOO_LONG: "Linha %{line}: registro maior que o layout (%{length} caracteres)"
-    ROW_INVALID_DATE: "Linha %{line}: data inválida em %{field} (%{raw})"
-    ROW_INVALID_AMOUNT: "Linha %{line}: valor inválido em %{field} (%{raw})"
-    ROW_AMOUNT_OUT_OF_RANGE: "Linha %{line}: valor fora da faixa em %{field} (%{raw})"
-    ROW_MISSING_FIELD: "Linha %{line}: campo obrigatório %{field} está em branco"
+    ROW_INVALID_DATE: "Linha %{line}: %{field} inválida (%{raw})"
+    ROW_INVALID_AMOUNT: "Linha %{line}: %{field} inválido (%{raw})"
+    ROW_AMOUNT_OUT_OF_RANGE: "Linha %{line}: %{field} fora da faixa (%{raw})"
+    ROW_MISSING_FIELD: "Linha %{line}: %{field} está em branco"
     ROW_UNKNOWN_RECORD_TYPE: "Linha %{line}: tipo de registro desconhecido (%{raw})"
     ROW_INVALID_ENCODING: "Linha %{line}: codificação de caractere inválida em %{field}"
 
