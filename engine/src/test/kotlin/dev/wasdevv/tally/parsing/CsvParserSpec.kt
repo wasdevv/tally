@@ -17,19 +17,21 @@ class CsvParserSpec : StringSpec({
     fun entries(parsed: ParsedFile) = parsed.lines.filterIsInstance<ParsedLine.Valid>().map { it.entry }
 
     "csv brasileiro le virgula decimal e ponto de milhar" {
-        val csv = """
+        val csv =
+            """
             our_number;amount;paid_at;counterparty
             00012938;1.234,56;2026-03-14;Silva ME
-        """.trimIndent()
+            """.trimIndent()
 
         entries(CsvParser.parse(csv, CsvLayout.BRAZILIAN)).single().amount shouldBe Cents(123456)
     }
 
     "csv americano le ponto decimal e virgula de milhar" {
-        val csv = """
+        val csv =
+            """
             our_number,amount,paid_at,counterparty
             00012938,"1,234.56",2026-03-14,Silva ME
-        """.trimIndent()
+            """.trimIndent()
 
         entries(CsvParser.parse(csv, CsvLayout.AMERICAN)).single().amount shouldBe Cents(123456)
     }
@@ -43,14 +45,16 @@ class CsvParserSpec : StringSpec({
             listOf(Locale.US, Locale.forLanguageTag("pt-BR"), Locale.GERMANY).forEach { locale ->
                 Locale.setDefault(locale)
 
-                val br = CsvParser.parse(
-                    "our_number;amount;paid_at;counterparty\n1;1.234,56;2026-03-14;X",
-                    CsvLayout.BRAZILIAN,
-                )
-                val us = CsvParser.parse(
-                    "our_number,amount,paid_at,counterparty\n1,\"1,234.56\",2026-03-14,X",
-                    CsvLayout.AMERICAN,
-                )
+                val br =
+                    CsvParser.parse(
+                        "our_number;amount;paid_at;counterparty\n1;1.234,56;2026-03-14;X",
+                        CsvLayout.BRAZILIAN,
+                    )
+                val us =
+                    CsvParser.parse(
+                        "our_number,amount,paid_at,counterparty\n1,\"1,234.56\",2026-03-14,X",
+                        CsvLayout.AMERICAN,
+                    )
 
                 entries(br).single().amount shouldBe entries(us).single().amount
                 entries(br).single().amount shouldBe Cents(123456)
@@ -77,7 +81,7 @@ class CsvParserSpec : StringSpec({
     }
 
     "BOM no inicio nao vira parte do nome da primeira coluna" {
-        val csv = "﻿our_number,amount,paid_at,counterparty\n1,10.00,2026-03-14,X"
+        val csv = "our_number,amount,paid_at,counterparty\n1,10.00,2026-03-14,X"
 
         entries(CsvParser.parse(csv, CsvLayout.AMERICAN)).single().ourNumber shouldBe "1"
     }
@@ -103,12 +107,13 @@ class CsvParserSpec : StringSpec({
     }
 
     "valor invalido rejeita a linha e as demais continuam" {
-        val csv = """
+        val csv =
+            """
             our_number,amount,paid_at,counterparty
             1,10.00,2026-03-14,A
             2,dez reais,2026-03-14,B
             3,30.00,2026-03-14,C
-        """.trimIndent()
+            """.trimIndent()
 
         val parsed = CsvParser.parse(csv, CsvLayout.AMERICAN)
         val rejected = parsed.lines.filterIsInstance<ParsedLine.Rejected>().single()

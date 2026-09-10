@@ -10,6 +10,10 @@ kotlin {
 }
 
 dependencies {
+    // Parser de CSV de verdade: aspas, delimitador dentro do campo e quebra de
+    // linha embutida. `split(",")` erra os tres.
+    implementation("org.apache.commons:commons-csv:1.12.0")
+
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
     testImplementation("io.kotest:kotest-property:5.9.1")
@@ -24,6 +28,7 @@ tasks.test {
 detekt {
     buildUponDefaultConfig = true
     allRules = false
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
 }
 
 kover {

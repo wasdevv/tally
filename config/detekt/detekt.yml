@@ -1,0 +1,28 @@
+# Apenas os desvios do default do detekt. Cada um com o motivo escrito: gate que
+# se afrouxa sem justificativa escrita deixa de ser gate.
+
+style:
+  MagicNumber:
+    # Num layout de largura fixa a POSICAO e o dado, nao um numero magico:
+    # `field("amount", 127..139)` se confere lado a lado com o manual do banco.
+    # Extrair AMOUNT_START = 127 devolveria exatamente os offsets espalhados que
+    # a DSL existe para eliminar. Vale so para a declaracao de layout -- em
+    # parsing/types/ os numeros continuam tendo que ganhar nome.
+    # Mantem os excludes default do detekt (test/), senao `LocalDate.of(2026, 3, 12)`
+    # numa spec vira violacao.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/parsing/cnab/**'
+      - '**/parsing/layout/**'
+  ReturnCount:
+    # Parser le campo e desiste cedo quando o campo esta ilegivel. Espremer isso
+    # em um unico ponto de saida troca clareza por conformidade com a regra.
+    max: 4
+    excludeGuardClauses: true

@@ -14,13 +14,14 @@ import io.kotest.matchers.string.shouldContain
 class LayoutSpec : StringSpec({
 
     "campo alem do comprimento do registro falha ao carregar o layout" {
-        val erro = shouldThrow<IllegalArgumentException> {
-            layout("quebrado", recordLength = 400) {
-                record(discriminator = 1..1, equalTo = "1") {
-                    field("amount", 395..405, Text)
+        val erro =
+            shouldThrow<IllegalArgumentException> {
+                layout("quebrado", recordLength = 400) {
+                    record(discriminator = 1..1, equalTo = "1") {
+                        field("amount", 395..405, Text)
+                    }
                 }
             }
-        }
 
         erro.message.orEmpty() shouldContain "395..405"
     }
@@ -29,7 +30,7 @@ class LayoutSpec : StringSpec({
         shouldThrow<IllegalArgumentException> {
             layout("quebrado", recordLength = 400) {
                 record(discriminator = 1..1, equalTo = "1") {
-                    field("amount", 139..127, Text)
+                    field("amount", IntRange(139, 127), Text)
                 }
             }
         }
@@ -67,12 +68,13 @@ class LayoutSpec : StringSpec({
     }
 
     "layout valido carrega e conhece seus registros" {
-        val l = layout("ok", recordLength = 40) {
-            record(discriminator = 1..1, equalTo = "1") {
-                field("ourNumber", 2..9, Text)
+        val l =
+            layout("ok", recordLength = 40) {
+                record(discriminator = 1..1, equalTo = "1") {
+                    field("ourNumber", 2..9, Text)
+                }
+                record(discriminator = 1..1, equalTo = "9") { }
             }
-            record(discriminator = 1..1, equalTo = "9") { }
-        }
 
         l.name shouldBe "ok"
         l.records.size shouldBe 2
