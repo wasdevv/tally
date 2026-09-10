@@ -6,6 +6,7 @@ import dev.wasdevv.tally.domain.ledger.OccurrenceCode
 import dev.wasdevv.tally.domain.ledger.ParsedLine
 import dev.wasdevv.tally.domain.money.Cents
 import dev.wasdevv.tally.parsing.ParsedFile
+import dev.wasdevv.tally.parsing.ReadLine
 import dev.wasdevv.tally.parsing.layout.Layout
 import dev.wasdevv.tally.parsing.layout.RecordSpec
 import dev.wasdevv.tally.parsing.layout.layout
@@ -43,28 +44,44 @@ object Cnab400 {
     private const val DETAIL = "1"
     private const val TRAILER = "9"
 
+    /**
+     * A forma que streama: uma linha lida por vez, nada do arquivo retido.
+     * E o que sustenta a medicao de heap limitado -- ler tudo em memoria daria o
+     * mesmo resultado com um pico de heap proporcional ao tamanho do arquivo.
+     */
+    fun read(
+        lines: Sequence<String>,
+        layout: Layout = synthetic,
+    ): Sequence<ReadLine> =
+        lines.mapIndexed { index, raw -> (index + 1) to raw.removeSuffix("\r") }
+            .map { (lineNumber, raw) ->
+                when (val parsed = readLine(raw, lineNumber, layout)) {
+                    null -> ReadLine.Structural(lineNumber)
+                    else -> ReadLine.Ledger(parsed)
+                }
+            }
+
+    /** Conveniencia para teste e arquivo pequeno; `read` e o caminho real. */
     fun parse(
         content: String,
         layout: Layout = synthetic,
     ): ParsedFile {
-        val lines = mutableListOf<ParsedLine>()
+        val entries = mutableListOf<ParsedLine>()
         val structural = mutableListOf<Int>()
 
-        content.removePrefix("")
-            .split("\n")
-            .map { it.removeSuffix("\r") }
-            // Um \n final e o fim da ultima linha, nao uma linha vazia.
-            .dropLastWhile { it.isEmpty() }
-            .forEachIndexed { index, raw ->
-                val lineNumber = index + 1
-                when (val outcome = readLine(raw, lineNumber, layout)) {
-                    null -> structural += lineNumber
-                    else -> lines += outcome
-                }
+        read(sourceLines(content), layout).forEach {
+            when (it) {
+                is ReadLine.Ledger -> entries += it.parsed
+                is ReadLine.Structural -> structural += it.line
             }
+        }
 
-        return ParsedFile(layout.name, lines, structural)
+        return ParsedFile(layout.name, entries, structural)
     }
+
+    /** BOM fora, e um \n final e fim da ultima linha, nao uma linha vazia. */
+    fun sourceLines(content: String): Sequence<String> =
+        content.removePrefix("\uFEFF").split("\n").dropLastWhile { it.isEmpty() }.asSequence()
 
     /** null = linha estrutural (header/trailer): contabilizada, sem lancamento. */
     private fun readLine(

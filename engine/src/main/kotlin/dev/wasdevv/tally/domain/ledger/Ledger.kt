@@ -95,6 +95,35 @@ data class Match(val entry: Entry, val receivable: Receivable, val reason: Match
 
 data class Review(val entry: Entry, val candidates: List<Receivable>, val reason: MatchReason)
 
+/** O destino de UMA linha. Exatamente um dos quatro, sempre. */
+sealed interface Destination {
+    val line: Int
+
+    data class Matched(
+        val entry: Entry,
+        val receivable: Receivable,
+        val reason: MatchReason,
+    ) : Destination {
+        override val line: Int get() = entry.line
+    }
+
+    data class NeedsReview(
+        val entry: Entry,
+        val candidates: List<Receivable>,
+        val reason: MatchReason,
+    ) : Destination {
+        override val line: Int get() = entry.line
+    }
+
+    data class Unmatched(val entry: Entry) : Destination {
+        override val line: Int get() = entry.line
+    }
+
+    data class Rejected(val occurrence: Occurrence) : Destination {
+        override val line: Int get() = occurrence.line
+    }
+}
+
 /** Os quatro destinos do brief secao 5.2. Toda linha termina em exatamente um. */
 enum class EntryStatus { MATCHED, NEEDS_REVIEW, UNMATCHED, REJECTED }
 
