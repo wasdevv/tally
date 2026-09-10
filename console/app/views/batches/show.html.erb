@@ -64,6 +64,11 @@
           <td class="tabular py-2 pe-3 text-end"><%= format_cents(entry["amountCents"]) %></td>
           <td class="py-2">
             <%= entry["counterparty"].presence || t("batches.show.none") %>
+            <% if entry["status"] == "NEEDS_REVIEW" %>
+              <%= link_to t("batches.show.review"),
+                          batch_review_path(@batch["id"], entry["line"]),
+                          class: "ms-2 inline-flex min-h-11 items-center underline" %>
+            <% end %>
             <% if (text = occurrence_text(entry["occurrence"])) %>
               <span class="block text-[12.8px]" style="color: var(--divergence)"><%= text %></span>
             <% elsif (reason = match_reason_label(entry["matchReason"])) %>

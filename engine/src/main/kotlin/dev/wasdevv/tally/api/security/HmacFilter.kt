@@ -62,7 +62,7 @@ class HmacFilter(
         val result =
             verifier.verify(
                 method = request.method,
-                path = request.requestURI,
+                path = canonicalPath(request),
                 contentDigest = digest,
                 timestamp = request.getHeader(TIMESTAMP_HEADER),
                 signature = request.getHeader(SIGNATURE_HEADER),
@@ -73,6 +73,17 @@ class HmacFilter(
             is HmacVerifier.Result.Invalid -> reject(response, result.reason)
         }
     }
+
+    /**
+     * Caminho MAIS query string.
+     *
+     * `requestURI` do servlet nao inclui a query, e assinar so ele deixaria
+     * `?status=` fora da assinatura -- quem interceptasse poderia troca-lo. E
+     * as duas pontas tem que concordar byte a byte: o cliente assina o caminho
+     * que ele monta, com a query junto.
+     */
+    private fun canonicalPath(request: HttpServletRequest): String =
+        request.queryString?.let { "${request.requestURI}?$it" } ?: request.requestURI
 
     private fun reject(
         response: HttpServletResponse,

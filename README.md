@@ -2,7 +2,8 @@
 
 Reconciles bank return files against expected receivables, and accounts for
 every line: matched, awaiting review, unmatched, or rejected with a reason.
-No cent enters or leaves.
+What the engine will not decide alone goes to a human queue carrying the
+candidates and the reason. No cent enters or leaves.
 
 A Kotlin engine decides; a Rails console presents. The engine never emits
 human-facing text — it emits stable codes, and the console renders them in
@@ -27,6 +28,7 @@ it to be revisited. Full text in [docs/DECISIONS.md](docs/DECISIONS.md).
 - [`domain` imports no framework, and that is a test](docs/DECISIONS.md#3-domain-não-importa-framework-e-isso-é-um-teste) — 1,000 generated cases per property run in milliseconds because no container is in the path.
 - [The engine only auto-matches on the title](docs/DECISIONS.md#5-o-motor-só-casa-sozinho-quando-o-título-identifica-o-lançamento) — matching on amount alone is a guess, and a guess puts money in the wrong account.
 - [The file's decimal separator belongs to the layout, never the locale](docs/DECISIONS.md#10-separador-decimal-é-propriedade-do-layout-nunca-do-locale) — otherwise the same file imports differently for two operators.
+- [A review decision never removes a line from the ledger](docs/DECISIONS.md#28-decisão-de-revisão-nunca-remove-a-linha-do-razão) — conservation is measured against the file, so an operator cannot make it balance by deleting.
 
 ## Numbers
 
@@ -39,7 +41,7 @@ median of five runs, and each one is reproducible by the command recorded in
 | Ingestion, 100k lines, streaming | 25,663 lines/s at 34 MB peak heap |
 | Same load read fully into memory | 24,306 lines/s at 127 MB peak heap |
 | Indexing receivables by title | 2.3× throughput, measured before and after |
-| Test suites | 94 domain + property · 24 integration · 50 console |
+| Test suites | 94 domain + property · 32 integration · 60 console |
 
 The streaming win is **memory, not speed** — the throughput difference is
 inside the run-to-run noise. That is what the measurement said, so that is what

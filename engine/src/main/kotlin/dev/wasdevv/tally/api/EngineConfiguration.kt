@@ -5,6 +5,7 @@ import dev.wasdevv.tally.api.security.HmacFilter
 import dev.wasdevv.tally.api.security.HmacVerifier
 import dev.wasdevv.tally.ingestion.BatchImporter
 import dev.wasdevv.tally.persistence.LedgerRepository
+import dev.wasdevv.tally.persistence.ReviewRepository
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
@@ -25,6 +26,9 @@ class EngineConfiguration {
 
     @Bean
     fun ledgerRepository(dsl: DSLContext) = LedgerRepository(dsl)
+
+    @Bean
+    fun reviewRepository(dsl: DSLContext) = ReviewRepository(dsl)
 
     @Bean
     fun batchImporter(

@@ -4,6 +4,7 @@ import dev.wasdevv.tally.api.dto.ApiError
 import dev.wasdevv.tally.api.dto.BatchSummary
 import dev.wasdevv.tally.api.dto.ImportResponse
 import dev.wasdevv.tally.api.dto.LedgerEntryView
+import dev.wasdevv.tally.api.dto.ReviewDecision
 import dev.wasdevv.tally.api.security.HmacFilter
 import dev.wasdevv.tally.api.security.UploadGuard
 import dev.wasdevv.tally.ingestion.BatchImporter
@@ -11,6 +12,7 @@ import dev.wasdevv.tally.ingestion.FileDigest
 import dev.wasdevv.tally.ingestion.ImportOutcome
 import dev.wasdevv.tally.ingestion.ImportRequest
 import dev.wasdevv.tally.parsing.cnab.Cnab400
+import dev.wasdevv.tally.persistence.ReviewRepository
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Value
@@ -19,6 +21,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -30,6 +33,7 @@ import java.security.MessageDigest
 @RequestMapping("/api/batches")
 class BatchController(
     private val importer: BatchImporter,
+    private val reviews: ReviewRepository,
     private val views: LedgerViews,
     @Value("\${tally.max-upload-bytes:33554432}") private val maxUploadBytes: Long,
 ) {
@@ -97,4 +101,30 @@ class BatchController(
         @PathVariable id: Long,
         @RequestParam(required = false) status: String?,
     ): List<LedgerEntryView> = views.entries(id, status)
+
+    /**
+     * A decisao humana sobre uma linha que o motor recusou decidir.
+     *
+     * `receivableId` nulo e "nenhum destes": a linha vai para UNMATCHED e
+     * continua no razao. Nao existe descartar linha -- a conservacao deixaria de
+     * fechar contra o arquivo, e o razao passaria a mentir sobre o que chegou.
+     */
+    @PostMapping("/{id}/entries/{line}/decision")
+    fun decide(
+        @PathVariable id: Long,
+        @PathVariable line: Int,
+        @RequestBody decision: ReviewDecision,
+    ): ResponseEntity<Any> =
+        when (reviews.decide(id, line, decision.receivableId)) {
+            ReviewRepository.Decision.Recorded ->
+                ResponseEntity.ok(mapOf("decided" to true))
+            ReviewRepository.Decision.NotFound ->
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError("ENTRY_NOT_FOUND"))
+            // 409 e nao 400: a requisicao esta bem formada, o ESTADO e que mudou
+            // debaixo dela. E o caso das duas abas decidindo a mesma linha.
+            ReviewRepository.Decision.NotUnderReview ->
+                ResponseEntity.status(HttpStatus.CONFLICT).body(ApiError("ENTRY_NOT_UNDER_REVIEW"))
+            ReviewRepository.Decision.UnknownReceivable ->
+                ResponseEntity.badRequest().body(ApiError("RECEIVABLE_NOT_FOUND"))
+        }
 }

@@ -2,6 +2,7 @@ package dev.wasdevv.tally.persistence
 
 import org.jooq.Field
 import org.jooq.JSONB
+import org.jooq.Record
 import org.jooq.Table
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.name
@@ -24,7 +25,7 @@ import java.time.OffsetDateTime
  * passar de ~10 tabelas ou quando o custo de manter isto sincronizado aparecer.
  */
 object Receivables {
-    val TABLE: Table<*> = table(name("receivables"))
+    val TABLE: Table<Record> = table(name("receivables"))
     val ID: Field<String> = field(name("receivables", "id"), SQLDataType.CLOB)
     val OUR_NUMBER: Field<String> = field(name("receivables", "our_number"), SQLDataType.CLOB)
     val AMOUNT_CENTS: Field<Long> = field(name("receivables", "amount_cents"), SQLDataType.BIGINT)
@@ -35,7 +36,7 @@ object Receivables {
 }
 
 object ImportBatches {
-    val TABLE: Table<*> = table(name("import_batches"))
+    val TABLE: Table<Record> = table(name("import_batches"))
     val ID: Field<Long> = field(name("import_batches", "id"), SQLDataType.BIGINT)
     val FILE_DIGEST: Field<String> = field(name("import_batches", "file_digest"), SQLDataType.CLOB)
     val FILENAME: Field<String> = field(name("import_batches", "filename"), SQLDataType.CLOB)
@@ -49,7 +50,7 @@ object ImportBatches {
 }
 
 object LedgerEntries {
-    val TABLE: Table<*> = table(name("ledger_entries"))
+    val TABLE: Table<Record> = table(name("ledger_entries"))
     val ID: Field<Long> = field(name("ledger_entries", "id"), SQLDataType.BIGINT)
     val BATCH_ID: Field<Long> = field(name("ledger_entries", "batch_id"), SQLDataType.BIGINT)
     val LINE: Field<Int> = field(name("ledger_entries", "line"), SQLDataType.INTEGER)
@@ -63,6 +64,10 @@ object LedgerEntries {
     val MATCH_REASON: Field<String> = field(name("ledger_entries", "match_reason"), SQLDataType.CLOB)
     val OCCURRENCE_CODE: Field<String> =
         field(name("ledger_entries", "occurrence_code"), SQLDataType.CLOB)
+    val DECIDED_AT: Field<OffsetDateTime> =
+        field(name("ledger_entries", "decided_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+    val DECIDED_REASON: Field<String> =
+        field(name("ledger_entries", "decided_reason"), SQLDataType.CLOB)
     val OCCURRENCE_PARAMS: Field<JSONB> =
         field(name("ledger_entries", "occurrence_params"), SQLDataType.JSONB)
 
@@ -70,5 +75,23 @@ object LedgerEntries {
         listOf(
             ID, BATCH_ID, LINE, STATUS, OUR_NUMBER, AMOUNT_CENTS, PAID_AT, COUNTERPARTY,
             MATCHED_RECEIVABLE_ID, MATCH_REASON, OCCURRENCE_CODE, OCCURRENCE_PARAMS,
+            DECIDED_AT, DECIDED_REASON,
         )
+}
+
+/**
+ * Os candidatos que o motor achou e nao desempatou.
+ *
+ * Sem eles a tela de revisao mandaria o operador procurar o titulo na mao --
+ * repetindo o trabalho que o motor ja fez, cuja conclusao foi "nao sei
+ * escolher". Isso e informacao, nao ausencia dela.
+ */
+object MatchCandidates {
+    val TABLE: Table<Record> = table(name("match_candidates"))
+    val ENTRY_ID: Field<Long> = field(name("match_candidates", "entry_id"), SQLDataType.BIGINT)
+    val RECEIVABLE_ID: Field<String> =
+        field(name("match_candidates", "receivable_id"), SQLDataType.CLOB)
+    val POSITION: Field<Int> = field(name("match_candidates", "position"), SQLDataType.INTEGER)
+
+    val ALL = listOf(ENTRY_ID, RECEIVABLE_ID, POSITION)
 }

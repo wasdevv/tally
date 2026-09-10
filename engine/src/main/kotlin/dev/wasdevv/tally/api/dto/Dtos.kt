@@ -32,7 +32,13 @@ data class LedgerEntryView(
     val matchedReceivableId: String?,
     val matchReason: String?,
     val occurrence: OccurrenceView?,
+    /** Os candidatos que o motor nao desempatou. Vazio fora de NEEDS_REVIEW. */
+    val candidates: List<ReceivableInput> = emptyList(),
+    val decidedAt: OffsetDateTime? = null,
 )
+
+/** `receivableId` nulo e "nenhum destes": a linha vira UNMATCHED, nao some. */
+data class ReviewDecision(val receivableId: String?)
 
 /**
  * Ocorrencia como codigo estavel mais parametros -- nunca frase.

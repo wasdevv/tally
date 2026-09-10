@@ -55,6 +55,14 @@ class EngineClient
 
   def receivables = get("/api/receivables")
 
+  # `receivable_id` nil e "nenhum destes": a linha vira UNMATCHED e continua no
+  # razao. Nao existe descartar linha.
+  def decide(batch_id, line, receivable_id)
+    body = JSON.dump({ receivableId: receivable_id })
+    post("/api/batches/#{batch_id}/entries/#{line}/decision", body,
+         Digest::SHA256.hexdigest(body), "application/json")
+  end
+
   def import(io:, filename:)
     bytes = io.read.b
     boundary = "tally#{SecureRandom.hex(8)}"

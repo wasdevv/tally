@@ -6,7 +6,7 @@
 # O job `contract` do CI sobe o motor de verdade e roda os mesmos fluxos contra
 # ele -- este duble serve para a suite rapida, nao para provar o contrato.
 class FakeEngine
-  attr_reader :imported
+  attr_reader :imported, :decisions
 
   def initialize(batches: [], entries: {}, receivables: [], raises: nil)
     @batches = batches
@@ -14,6 +14,7 @@ class FakeEngine
     @receivables = receivables
     @raises = raises
     @imported = []
+    @decisions = []
   end
 
   def batches
@@ -35,6 +36,13 @@ class FakeEngine
   end
 
   def receivables = @receivables
+
+  def decide(batch_id, line, receivable_id)
+    raise @raises if @raises
+
+    @decisions << [ batch_id.to_s, line.to_i, receivable_id ]
+    { "decided" => true }
+  end
 
   def import(io:, filename:)
     raise @raises if @raises
@@ -62,7 +70,15 @@ module EnginePayloads
     }
   end
 
-  def entry(line: 41, status: "MATCHED", amount_cents: 120_400, occurrence: nil, match_reason: "EXACT")
+  def receivable(id: "r1", our_number: "00012938471", cents: 120_400, payer: "Silva ME")
+    {
+      "id" => id, "ourNumber" => our_number, "amountCents" => cents,
+      "dueDate" => "2026-03-12", "payer" => payer
+    }
+  end
+
+  def entry(line: 41, status: "MATCHED", amount_cents: 120_400, occurrence: nil,
+            match_reason: "EXACT", candidates: [])
     {
       "id" => line,
       "line" => line,
@@ -73,7 +89,8 @@ module EnginePayloads
       "counterparty" => "Silva ME",
       "matchedReceivableId" => (status == "MATCHED" ? "r1" : nil),
       "matchReason" => match_reason,
-      "occurrence" => occurrence
+      "occurrence" => occurrence,
+      "candidates" => candidates
     }
   end
 
@@ -88,7 +105,8 @@ module EnginePayloads
       "counterparty" => nil,
       "matchedReceivableId" => nil,
       "matchReason" => nil,
-      "occurrence" => { "line" => line, "code" => code, "params" => params }
+      "occurrence" => { "line" => line, "code" => code, "params" => params },
+      "candidates" => []
     }
   end
 end

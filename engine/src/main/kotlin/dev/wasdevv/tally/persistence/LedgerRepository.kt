@@ -120,7 +120,49 @@ class LedgerRepository(private val dsl: DSLContext) {
                 }
         }
 
-        insert.execute()
+        val ids = insert.returning(LedgerEntries.ID).fetch().map { it[LedgerEntries.ID] }
+        saveCandidates(txn, ids, destinations)
+    }
+
+    /**
+     * Os candidatos que o motor achou e nao desempatou.
+     *
+     * Sem eles a tela de revisao mandaria o operador procurar o titulo na mao --
+     * repetindo o trabalho que o motor ja fez e cuja conclusao foi "nao sei
+     * escolher", que e informacao, nao ausencia dela.
+     */
+    private fun saveCandidates(
+        txn: DSLContext,
+        ids: List<Long>,
+        destinations: List<Destination>,
+    ) {
+        val rows =
+            destinations.asSequence()
+                .zip(ids.asSequence())
+                .filter { (destination, _) -> destination is Destination.NeedsReview }
+                .flatMap { (destination, entryId) ->
+                    (destination as Destination.NeedsReview).candidates
+                        .asSequence()
+                        .mapIndexed { position, candidate -> Triple(entryId, candidate.id.value, position) }
+                }
+                .toList()
+
+        if (rows.isEmpty()) return
+
+        // `batch` com uma consulta modelo em vez da cadeia InsertValuesStepN:
+        // uma ida ao banco, e sem a ginastica de tipo generico que a cadeia
+        // exige para tres colunas.
+        val template =
+            txn.insertInto(MatchCandidates.TABLE)
+                .set(MatchCandidates.ENTRY_ID, 0L)
+                .set(MatchCandidates.RECEIVABLE_ID, "")
+                .set(MatchCandidates.POSITION, 0)
+
+        val batch = txn.batch(template)
+        rows.forEach { (entryId, receivableId, position) ->
+            batch.bind(entryId, receivableId, position)
+        }
+        batch.execute()
     }
 
     fun loadReceivables(txn: DSLContext = dsl): List<Receivable> =

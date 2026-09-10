@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import dev.wasdevv.tally.api.dto.BatchSummary
 import dev.wasdevv.tally.api.dto.LedgerEntryView
 import dev.wasdevv.tally.api.dto.OccurrenceView
+import dev.wasdevv.tally.api.dto.ReceivableInput
 import dev.wasdevv.tally.domain.ledger.EntryStatus
 import dev.wasdevv.tally.domain.money.Cents
 import dev.wasdevv.tally.persistence.BatchRow
 import dev.wasdevv.tally.persistence.ImportBatches
 import dev.wasdevv.tally.persistence.LedgerEntries
 import dev.wasdevv.tally.persistence.LedgerRepository
+import dev.wasdevv.tally.persistence.ReviewRepository
 import org.jooq.DSLContext
 import org.jooq.JSONB
 import org.jooq.impl.DSL
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Component
 class LedgerViews(
     private val dsl: DSLContext,
     private val repository: LedgerRepository,
+    private val reviews: ReviewRepository,
     private val mapper: ObjectMapper,
 ) {
     fun allBatches(): List<BatchSummary> =
@@ -80,6 +83,39 @@ class LedgerViews(
         batchId: Long,
         status: String?,
     ): List<LedgerEntryView> {
+        val rows = entryRows(batchId, status)
+
+        // Uma consulta para TODOS os candidatos, nao uma por linha em revisao:
+        // um lote grande faria centenas de idas ao banco para desenhar uma tela.
+        val candidates = reviews.candidatesFor(rows.map { it.id })
+        if (candidates.isEmpty()) return rows.map { it.view }
+
+        val receivables = repository.loadReceivables().associateBy { it.id.value }
+        return rows.map { row ->
+            row.view.copy(
+                candidates =
+                    candidates[row.id]
+                        .orEmpty()
+                        .mapNotNull { receivables[it] }
+                        .map { receivable ->
+                            ReceivableInput(
+                                id = receivable.id.value,
+                                ourNumber = receivable.ourNumber,
+                                amountCents = receivable.amount.value,
+                                dueDate = receivable.dueDate,
+                                payer = receivable.payer,
+                            )
+                        },
+            )
+        }
+    }
+
+    private class EntryRow(val id: Long, val view: LedgerEntryView)
+
+    private fun entryRows(
+        batchId: Long,
+        status: String?,
+    ): List<EntryRow> {
         var condition = LedgerEntries.BATCH_ID.eq(batchId)
         if (!status.isNullOrBlank()) condition = condition.and(LedgerEntries.STATUS.eq(status))
 
@@ -97,25 +133,28 @@ class LedgerViews(
             .fetch()
             .map { record ->
                 val code = record[LedgerEntries.OCCURRENCE_CODE]
-                LedgerEntryView(
-                    id = record[LedgerEntries.ID],
-                    line = record[LedgerEntries.LINE],
-                    status = record[LedgerEntries.STATUS],
-                    ourNumber = record[LedgerEntries.OUR_NUMBER],
-                    amountCents = record[LedgerEntries.AMOUNT_CENTS],
-                    paidAt = record[LedgerEntries.PAID_AT],
-                    counterparty = record[LedgerEntries.COUNTERPARTY],
-                    matchedReceivableId = record[LedgerEntries.MATCHED_RECEIVABLE_ID],
-                    matchReason = record[LedgerEntries.MATCH_REASON],
-                    occurrence =
-                        code?.let {
-                            OccurrenceView(
-                                line = record[LedgerEntries.LINE],
-                                code = it,
-                                params = paramsOf(record[LedgerEntries.OCCURRENCE_PARAMS]),
-                            )
-                        },
-                )
+                val view =
+                    LedgerEntryView(
+                        id = record[LedgerEntries.ID],
+                        line = record[LedgerEntries.LINE],
+                        status = record[LedgerEntries.STATUS],
+                        ourNumber = record[LedgerEntries.OUR_NUMBER],
+                        amountCents = record[LedgerEntries.AMOUNT_CENTS],
+                        paidAt = record[LedgerEntries.PAID_AT],
+                        counterparty = record[LedgerEntries.COUNTERPARTY],
+                        matchedReceivableId = record[LedgerEntries.MATCHED_RECEIVABLE_ID],
+                        matchReason = record[LedgerEntries.MATCH_REASON],
+                        occurrence =
+                            code?.let {
+                                OccurrenceView(
+                                    line = record[LedgerEntries.LINE],
+                                    code = it,
+                                    params = paramsOf(record[LedgerEntries.OCCURRENCE_PARAMS]),
+                                )
+                            },
+                        decidedAt = record[LedgerEntries.DECIDED_AT],
+                    )
+                EntryRow(record[LedgerEntries.ID], view)
             }
     }
 

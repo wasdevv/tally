@@ -1,0 +1,2 @@
+<% content_for :title, t("error.title") %>
+<%= render "shared/error", error: EngineClient::Error.new("ENTRY_NOT_UNDER_REVIEW") %>

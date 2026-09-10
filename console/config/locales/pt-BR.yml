@@ -23,6 +23,16 @@ pt-BR:
       amount: Valor
       counterpart: Contraparte
       none: "—"
+      review: Revisar
+
+  reviews:
+    show:
+      title: "Revisar linha %{line}"
+      back: Voltar para a fila de revisão
+      candidates: Candidatos que o motor encontrou
+      no_candidates: O motor não encontrou candidato para esta linha. Deixá-la sem par a mantém no razão como pendência.
+      none_of_these: Nenhum destes — deixar sem par
+      submit: Registrar decisão
 
   receivables:
     index:
@@ -83,7 +93,11 @@ pt-BR:
     CONTENT_DIGEST_MISMATCH: O arquivo mudou no caminho. Tente a importação de novo.
     UNAUTHORIZED: Este console não está autorizado a falar com o motor (%{reason}).
 
+    ENTRY_NOT_UNDER_REVIEW: Essa linha não está mais em revisão. Alguém pode já tê-la decidido.
+    ENTRY_NOT_FOUND: Essa linha não existe neste lote.
+    RECEIVABLE_NOT_FOUND: Esse recebível não existe mais. Recarregue a fila e tente de novo.
   flash:
+    decided: Decisão registrada.
     imported: Arquivo de retorno importado.
     already_imported: Esse arquivo já tinha sido importado. Mostrando o lote existente.
 

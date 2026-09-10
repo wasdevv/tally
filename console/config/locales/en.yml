@@ -23,6 +23,16 @@ en:
       amount: Amount
       counterpart: Counterpart
       none: "—"
+      review: Review
+
+  reviews:
+    show:
+      title: "Review line %{line}"
+      back: Back to the review queue
+      candidates: Candidates the engine found
+      no_candidates: The engine found no candidate for this line. Leaving it unmatched keeps it in the ledger as pending.
+      none_of_these: None of these — leave it unmatched
+      submit: Record decision
 
   receivables:
     index:
@@ -84,7 +94,11 @@ en:
     CONTENT_DIGEST_MISMATCH: The file changed in transit. Try the import again.
     UNAUTHORIZED: This console is not authorised to talk to the engine (%{reason}).
 
+    ENTRY_NOT_UNDER_REVIEW: That line is no longer under review. Someone may have decided it already.
+    ENTRY_NOT_FOUND: That line does not exist in this batch.
+    RECEIVABLE_NOT_FOUND: That receivable no longer exists. Reload the queue and try again.
   flash:
+    decided: Decision recorded.
     imported: Return file imported.
     already_imported: That file was already imported. Showing the existing batch.
 

@@ -360,6 +360,66 @@ para o operador ler.
 String livre é o que torna o conjunto fechado — e conjunto fechado se pode
 provar. Conferido por mutação: acrescentar um código sem tradução reprova.
 
+## 28. Decisão de revisão nunca remove a linha do razão
+
+**Decisão.** "Nenhum destes" leva a linha para `UNMATCHED`, não para fora. Não
+existe descartar.
+
+**Por quê.** A conservação é medida contra o **arquivo**: se o operador pudesse
+apagar uma linha, o razão passaria a fechar contra si mesmo em vez de contra o
+que o banco mandou — que é exatamente a mentira que este projeto existe para
+impedir.
+
+**Provado por.** `ReviewSpec` compara cardinalidade e soma antes e depois da
+decisão: as duas ficam iguais. Uma decisão muda o **destino** de uma linha,
+nunca o total.
+
+**O motivo original é preservado.** `match_reason` continua dizendo `AMBIGUOUS`
+depois da decisão; `decided_reason` diz o que o humano fez. Sobrescrever o
+primeiro apagaria por que aquilo chegou à fila.
+
+## 29. Decidir duas vezes é 409, e a condição está no `UPDATE`
+
+**Decisão.** A transição só vale a partir de `NEEDS_REVIEW`, e isso é uma
+cláusula do próprio `UPDATE` — não uma leitura seguida de escrita.
+
+**Por quê.** Duas abas do navegador na mesma linha é o caso comum, não o
+exótico. Ler-e-então-escrever tem uma janela entre as duas; a condição no
+`UPDATE` não tem. A segunda aba afeta zero linhas e recebe conflito.
+
+**409 e não 400.** A requisição está bem formada; o **estado** mudou debaixo
+dela. O código diz qual dos dois aconteceu, e a tela consegue dizer ao operador
+"alguém já decidiu isto" em vez de "requisição inválida".
+
+## 30. A query string entra no material assinado
+
+**Decisão.** O HMAC cobre `caminho?query`, não só o caminho.
+
+**Como apareceu.** Não foi previsto: foi um 401 na tela de revisão, rodando o
+sistema. O cliente assinava o caminho **com** a query; `HttpServletRequest.
+requestURI` **não inclui** a query, então toda chamada filtrada falhava — e
+nenhuma suíte via, porque só chamadas sem filtro eram assinadas de verdade.
+
+**Por quê assinar a query e não removê-la da assinatura.** As duas pontas
+concordarem já resolveria o 401. Mas `?status=` seleciona o que o operador vê,
+e o que é interceptável é modificável — assinar mais da requisição é a escolha
+que não precisa ser revisitada.
+
+**Coberto por.** Um exemplo de contrato que faz uma chamada **filtrada** contra
+o motor real. A lacuna era exatamente essa: nenhum teste assinado passava query.
+
+## 31. `ReviewRepository` separado, porque o linter estava certo
+
+**Decisão.** Ler candidatos e registrar decisão saíram de `LedgerRepository`.
+
+**Como apareceu.** O detekt reclamou do número de métodos da classe. A resposta
+preguiçosa seria subir o limite; a reclamação estava certa — a classe tinha
+juntado dois trabalhos, gravar o razão durante a importação e resolver o que
+ficou pendente depois.
+
+**Regra que isso ilustra.** Gate que aponta um problema real se atende, não se
+afrouxa. O limite continua onde estava.
+
 ---
 
 ## Escopo: o que ficou de fora

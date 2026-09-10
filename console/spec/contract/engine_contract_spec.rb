@@ -96,6 +96,23 @@ RSpec.describe "Contrato com o motor", :contract do
     end
   end
 
+  # Este exemplo existe por causa de um bug real, achado rodando e nao lendo: o
+  # cliente assinava o caminho COM a query string e o motor assinava
+  # `requestURI`, que no servlet nao inclui a query. Toda chamada filtrada dava
+  # 401 -- e nenhuma suite via, porque so as chamadas SEM filtro eram assinadas
+  # de verdade. A query agora entra no material assinado dos dois lados.
+  it "chamada com filtro na query e aceita, e a query esta assinada" do
+    rows = [ detail(our_number: "#{run_id[0, 4]}9005", cents: 300, date: "999999") ]
+    result = client.import(io: StringIO.new(return_file(rows)), filename: "filtro-#{run_id}.ret")
+    batch_id = result.dig("batch", "id")
+
+    filtered = client.entries(batch_id, status: "REJECTED")
+
+    expect(filtered.size).to eq(1)
+    expect(filtered.first["status"]).to eq("REJECTED")
+    expect(client.entries(batch_id, status: "MATCHED")).to be_empty
+  end
+
   it "reprocessar o mesmo arquivo nao duplica o lote" do
     content = return_file([ detail(our_number: "#{run_id[0, 4]}9004", cents: 700) ])
 
