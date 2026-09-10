@@ -1,0 +1,49 @@
+name: tally
+
+services:
+  engine-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tally
+      POSTGRES_USER: tally
+      POSTGRES_PASSWORD: ${TALLY_DB_PASSWORD:?set TALLY_DB_PASSWORD, see .env.example}
+    ports: ["5432:5432"]
+    volumes: ["engine-db:/var/lib/postgresql/data"]
+    healthcheck:
+      # O motor migra no boot; subir antes do banco aceitar conexao so produz
+      # um restart e um log confuso.
+      test: ["CMD-SHELL", "pg_isready -U tally -d tally"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  engine:
+    build:
+      context: .
+      dockerfile: engine/Dockerfile
+    depends_on:
+      engine-db: { condition: service_healthy }
+    environment:
+      TALLY_DB_URL: jdbc:postgresql://engine-db:5432/tally
+      TALLY_DB_USER: tally
+      TALLY_DB_PASSWORD: ${TALLY_DB_PASSWORD:?}
+      TALLY_HMAC_SECRET: ${TALLY_HMAC_SECRET:?set TALLY_HMAC_SECRET, see .env.example}
+    ports: ["8080:8080"]
+
+  console:
+    build:
+      context: ./console
+    depends_on: [engine]
+    environment:
+      TALLY_ENGINE_URL: http://engine:8080
+      # A MESMA chave dos dois lados: e o segredo compartilhado do HMAC.
+      TALLY_HMAC_SECRET: ${TALLY_HMAC_SECRET:?}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set SECRET_KEY_BASE, see .env.example}
+      RAILS_ENV: production
+      # O console nao tem banco: sem isto o Rails de producao recusa subir por
+      # nao achar configuracao que nao existe.
+      RAILS_LOG_TO_STDOUT: "1"
+    ports: ["3000:3000"]
+
+volumes:
+  engine-db:

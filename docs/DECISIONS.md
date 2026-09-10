@@ -243,6 +243,123 @@ devolveria exatamente os offsets espalhados que a DSL existe para eliminar. Em
 **Regra de crescimento.** Todo desvio novo entra com o motivo na mesma linha.
 Gate que se afrouxa sem justificativa escrita deixa de ser gate.
 
+## 20. A importação inteira em uma transação, sem estado `PROCESSING`
+
+**Decisão.** As linhas são gravadas antes da linha do lote (FK deferida), e o
+lote só nasce no fim, com a contagem já conferida contra o banco.
+
+**Contra.** Criar o lote como `PROCESSING` e atualizar no fim (descartado: exige
+recuperação de lote travado, e um crash no momento errado deixa um lote que
+*parece* válido).
+
+**Consequência.** Falha no meio não deixa lote concluído porque não deixa lote
+nenhum. "Importou pela metade" não é um estado observável.
+
+**Mudaria se.** Um arquivo passasse a não caber em uma transação — aí entra
+lote `PROCESSING` com retomada, e o custo de recuperação passa a se pagar.
+
+## 21. Advisory lock derivado do digest, na transação
+
+**Decisão.** `pg_advisory_xact_lock` com chave derivada dos primeiros 8 bytes do
+SHA-256, adquirido dentro da transação que faz o trabalho.
+
+**Por quê a variante `xact`.** O lock morre com a transação, inclusive se o
+processo cair. Lock de sessão que sobrevive ao dono trava a fila de importação
+até alguém reiniciar o banco.
+
+**Por quê o digest e não `hashCode()`.** `hashCode` de String é estável por
+especificação, mas o de qualquer outro tipo não é — e um lock cuja chave muda
+entre versões deixa de ser lock sem avisar.
+
+**Provado por.** 8 corrotinas na mesma carga: um único lote, 50 linhas, uma vez.
+Conferido por mutação — remover o lock reprova o teste.
+
+## 22. Idempotência tem escopo `(lote, linha)`, nunca conteúdo
+
+**Decisão.** A chave única é `(batch_id, line)`. O arquivo inteiro é
+desduplicado pelo digest; as linhas dentro dele, não.
+
+**Por quê.** Duas linhas idênticas no mesmo arquivo são **dois pagamentos
+legítimos** — mesmo sacado, mesmo valor, mesmo dia acontece. Desduplicar por
+conteúdo apagaria dinheiro de verdade e a conservação fecharia em cima da perda.
+
+## 23. jOOQ sem geração de código, com um teste no lugar dela
+
+**Decisão.** `Tables.kt` declara colunas à mão; `SchemaDriftSpec` roda contra o
+banco migrado e falha se qualquer campo declarado não existir lá.
+
+**Contra.** `jooq-codegen-gradle` (descartado por ora: exige um Postgres de pé
+para *compilar*, e o que ele daria a mais — garantia de que os nomes existem —
+custa 40 linhas de teste).
+
+**`ponytail:`** sem codegen. Migrar quando o esquema passar de ~10 tabelas ou
+quando manter isto sincronizado começar a doer.
+
+## 24. O HMAC assina o digest do conteúdo, não os bytes
+
+**Decisão.** O material assinado é `timestamp \n método \n caminho \n digest`.
+Em requisição JSON o filtro calcula o digest dos bytes crus; em upload
+multipart, o cliente declara o digest em header e o controller o confere contra
+os bytes recebidos.
+
+**Por quê não assinar os bytes direto.** Em multipart o container precisa do
+stream intacto para montar as partes. Drenar o corpo no filtro para assinar
+deixava o upload chegar **vazio** ao controller — sem erro visível. Foi
+encontrado rodando, não pensando.
+
+**A corrente fecha em dois pontos**, e é isso que amarra o arquivo à assinatura:
+o filtro exige o header, o controller confere o digest contra o conteúdo. Trocar
+o arquivo depois de assinar dá 400, e há spec.
+
+**O que isto não cobre.** Nome do arquivo e demais campos do multipart ficam
+fora da assinatura. Para este sistema o conteúdo é o que importa; se um campo de
+formulário passar a ter efeito colateral, ele precisa entrar no material
+assinado.
+
+## 25. Índice por nosso número na conciliação — medido, não suposto
+
+**Decisão.** `Reconciliation` indexa os recebíveis por nosso número em vez de
+refiltrar a lista a cada linha.
+
+**Por quê.** A medição mostrou vazão idêntica entre streaming e leitura total,
+e abaixo do esperado. A causa não era o parser: a conciliação era O(linhas ×
+recebíveis). Depois do índice, 2,3× — números antes e depois em
+`docs/MEASUREMENTS.md`.
+
+**Como a semântica ficou provada.** Otimização que muda resultado é bug.
+`ReconciliationSpec` compara o razão indexado com o de uma implementação ingênua
+de varredura total, sobre 800 arquivos gerados. Conferido por mutação: deixar o
+índice sair de sincronia reprova a suíte.
+
+**Este é o único ponto do projeto onde desempenho ditou desenho** — e só depois
+de a medição existir. Nenhum índice de banco foi criado por suposição.
+
+## 26. O console não tem banco
+
+**Decisão.** Rails sem ActiveRecord. Sessão em cookie assinado, e nada mais.
+
+**Por quê.** O razão mora no motor. Espelhar tabela do motor no console, ou
+apontar os dois para o mesmo banco, é o atalho que vira dívida no dia em que o
+esquema muda e a tela quebra sem ninguém tê-la tocado.
+
+**Consequência.** O console tem uma única porta para os dados — `EngineClient` —
+e ela é testada contra um servidor HTTP de verdade, porque o que precisa ser
+provado são os bytes na rede.
+
+## 27. O gate de i18n forte lê o enum do motor
+
+**Decisão.** Além de `i18n-tasks missing`/`unused`, um spec lê `OccurrenceCode`
+no fonte Kotlin e exige o par nos dois idiomas.
+
+**Por quê.** `i18n-tasks` compara os dois YAML **entre si**: um código que falte
+nos dois idiomas passa. Mas quem define o conjunto é o enum do motor, e um
+código novo sem tradução nenhuma chega à tela como identificador em maiúsculas
+para o operador ler.
+
+**É o retorno do investimento da decisão 8.** `OccurrenceCode` ser enum e não
+String livre é o que torna o conjunto fechado — e conjunto fechado se pode
+provar. Conferido por mutação: acrescentar um código sem tradução reprova.
+
 ---
 
 ## Escopo: o que ficou de fora

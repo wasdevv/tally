@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+# Nenhum job com continue-on-error. Gate que nao barra nao e gate.
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: tally } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          # Cacheia dependencia, nunca resultado: cache de resultado transforma
+          # gate em carimbo.
+          cache: gradle
+
+      - name: Formato e smell
+        run: ./gradlew ktlintCheck detekt
+
+      # Suite rapida separada da lenta de proposito: se o dominio quebrou, o log
+      # diz isso em segundos em vez de depois de subir um Postgres.
+      - name: Dominio e property testing
+        run: ./gradlew test
+
+      - name: Fronteira de arquitetura e cobertura de dominio
+        run: ./gradlew koverVerify
+
+      - name: Integracao contra PostgreSQL 16 real
+        run: ./gradlew integrationTest
+
+  console:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: tally/console } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { bundler-cache: true }
+
+      - name: RuboCop
+        run: bundle exec rubocop
+
+      - name: Brakeman
+        run: bundle exec brakeman -q
+
+      # Os dois lados do gate de traducao. `missing` e `unused` comparam os YAML
+      # entre si; o spec de codigos do motor cobre o buraco que eles nao veem --
+      # codigo novo em Kotlin sem par em NENHUM idioma passaria batido aqui.
+      - name: Paridade de traducao
+        run: |
+          bundle exec i18n-tasks missing
+          bundle exec i18n-tasks unused
+
+      - name: RSpec e Capybara
+        run: bin/rspec
+
+  # O console fala com o motor DE VERDADE. As suites isoladas usam um duble na
+  # borda; este job e quem prova que o contrato entre os dois nao divergiu.
+  contract:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tally
+          POSTGRES_USER: tally
+          POSTGRES_PASSWORD: contract-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tally -d tally"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      TALLY_HMAC_SECRET: contract-ci-secret-0123456789abcdef
+      TALLY_ENGINE_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: gradle }
+      - uses: ruby/setup-ruby@v1
+        with: { working-directory: tally/console, bundler-cache: true }
+
+      - name: Sobe o motor
+        working-directory: tally
+        env:
+          TALLY_DB_URL: jdbc:postgresql://localhost:5432/tally
+          TALLY_DB_USER: tally
+          TALLY_DB_PASSWORD: contract-ci
+        run: |
+          ./gradlew :engine:bootJar -x test
+          java -jar engine/build/libs/*.jar &
+          # Espera o motor responder em vez de dormir um numero magico: sleep
+          # fixo ou falha em runner lento ou desperdica tempo em runner rapido.
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/batches || true)
+            # 401 ja prova que o motor esta de pe: nao assinamos esta chamada.
+            [ "$code" = "401" ] && exit 0
+            sleep 1
+          done
+          echo "motor nao subiu em 60s"; exit 1
+
+      - name: Contrato do console contra o motor real
+        working-directory: tally/console
+        run: bin/rspec spec/contract

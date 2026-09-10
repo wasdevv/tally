@@ -108,3 +108,16 @@ kover {
         }
     }
 }
+
+// Medicao manual, fora do CI: runner compartilhado tem vizinho barulhento e
+// numero de benchmark em CI e ruido que ninguem confia.
+// Ver docs/MEASUREMENTS.md para o protocolo e os resultados registrados.
+tasks.register<JavaExec>("measure") {
+    description = "Mede ingestao: streaming contra ler o arquivo inteiro em memoria."
+    group = "verification"
+    classpath = sourceSets["integrationTest"].runtimeClasspath
+    mainClass.set("dev.wasdevv.tally.measurement.IngestionMeasurement")
+    // Heap fixo: pico de heap medido com heap elastico mede a politica do GC,
+    // nao o programa.
+    jvmArgs("-Xms64m", "-Xmx1g")
+}
