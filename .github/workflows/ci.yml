@@ -45,8 +45,15 @@ jobs:
     defaults: { run: { working-directory: console } }
     steps:
       - uses: actions/checkout@v4
+      # `working-directory` explicito: a action NAO respeita o
+      # `defaults.run.working-directory` do job -- ela procura `.ruby-version`
+      # onde voce apontar, e da raiz nao ha nenhum. O job `contract` ja passava
+      # por ter isto; este nao tinha, e foi a unica falha da primeira execucao
+      # real do CI.
       - uses: ruby/setup-ruby@v1
-        with: { bundler-cache: true }
+        with:
+          working-directory: console
+          bundler-cache: true
 
       - name: RuboCop
         run: bundle exec rubocop
