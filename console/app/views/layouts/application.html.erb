@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+  <head>
+    <title><%= content_for(:title) || t("app.name") %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= yield :head %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="min-h-screen">
+    <header class="border-b" style="border-color: var(--rule)">
+      <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+        <%= link_to t("app.name"), root_path, class: "text-xl font-semibold" %>
+
+        <%= link_to t("nav.batches"), batches_path, class: "min-h-11 flex items-center" %>
+        <%= link_to t("nav.receivables"), receivables_path, class: "min-h-11 flex items-center" %>
+        <%= link_to t("nav.import"), new_import_path, class: "min-h-11 flex items-center" %>
+
+        <div class="ms-auto flex items-center gap-2 text-sm">
+          <span class="sr-only"><%= t("locale.switch") %></span>
+          <% available_locales.each do |locale| %>
+            <%= link_to locale.to_s.upcase,
+                        url_for(locale: locale),
+                        class: "min-h-11 flex items-center px-1 #{'font-semibold underline' if locale == current_locale}",
+                        lang: locale,
+                        "aria-current": (locale == current_locale ? "true" : nil) %>
+          <% end %>
+        </div>
+      </nav>
+    </header>
+
+    <% if flash[:notice] %>
+      <p class="mx-auto max-w-6xl px-4 pt-4" role="status"><%= flash[:notice] %></p>
+    <% end %>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <%= yield %>
+    </main>
+  </body>
+</html>

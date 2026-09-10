@@ -1,0 +1,10 @@
+<%#
+  Erro diz o que aconteceu e o que fazer, sem pedir desculpa. Nunca "Oops!",
+  nunca "Something went wrong".
+%>
+<div class="border-l-[3px] p-4" style="border-color: var(--divergence); background: var(--band)" role="alert">
+  <p class="font-semibold"><%= t("error.title") %></p>
+  <p class="mt-1 max-w-[72ch]">
+    <%= t("error.#{error.code}", **error.params.symbolize_keys, default: t("error.ENGINE_ERROR", status: "—")) %>
+  </p>
+</div>

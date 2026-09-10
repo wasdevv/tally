@@ -1,0 +1,105 @@
+en:
+  app:
+    name: Tally
+
+  nav:
+    batches: Batches
+    receivables: Receivables
+    import: Import
+
+  batches:
+    index:
+      title: Batches
+      empty: No batches yet. Import a return file to start reconciling.
+      empty_action: Import a return file
+      lines: "%{count} lines"
+    show:
+      unreconciled: unreconciled
+      lines: "%{count} lines"
+      all: All
+      line: Line
+      paid: Paid
+      our_number: Our number
+      amount: Amount
+      counterpart: Counterpart
+      none: "—"
+
+  receivables:
+    index:
+      title: Receivables
+      empty: No receivables registered yet.
+      our_number: Our number
+      amount: Amount
+      due: Due
+      payer: Payer
+
+  imports:
+    new:
+      title: Import a return file
+      file: Return file
+      submit: Import
+      hint: Fixed-width CNAB 400 return files.
+
+  status:
+    MATCHED: Matched
+    NEEDS_REVIEW: Review
+    UNMATCHED: Unmatched
+    REJECTED: Rejected
+
+  status_glyph:
+    MATCHED: "■"
+    NEEDS_REVIEW: "◧"
+    UNMATCHED: "□"
+    REJECTED: "▨"
+
+  match_reason:
+    EXACT: Exact match
+    WITHIN_TOLERANCE: Within tolerance
+    AMOUNT_MISMATCH: Amount does not match the title
+    AMOUNT_ONLY: Amount matches but the title does not
+    AMBIGUOUS: More than one candidate
+
+  # Chave = codigo do motor. O motor emite o codigo; o texto vive aqui.
+  occurrence:
+    ROW_TOO_SHORT: "Line %{line}: record is shorter than the layout (%{length} characters)"
+    ROW_TOO_LONG: "Line %{line}: record is longer than the layout (%{length} characters)"
+    ROW_INVALID_DATE: "Line %{line}: invalid date in %{field} (%{raw})"
+    ROW_INVALID_AMOUNT: "Line %{line}: invalid amount in %{field} (%{raw})"
+    ROW_AMOUNT_OUT_OF_RANGE: "Line %{line}: amount out of range in %{field} (%{raw})"
+    ROW_MISSING_FIELD: "Line %{line}: required field %{field} is blank"
+    ROW_UNKNOWN_RECORD_TYPE: "Line %{line}: unknown record type (%{raw})"
+    ROW_INVALID_ENCODING: "Line %{line}: invalid character encoding in %{field}"
+
+  error:
+    title: Something needs your attention
+    ENGINE_UNAVAILABLE: The engine is not responding. Check that it is running, then reload this page.
+    ENGINE_ERROR: The engine rejected the request (status %{status}).
+    ENGINE_BAD_RESPONSE: The engine returned a response this console could not read (status %{status}).
+    BATCH_NOT_FOUND: That batch does not exist. It may have been removed.
+    FILE_MISSING: Choose a return file before importing.
+    FILE_EMPTY: That file is empty. Pick the return file your bank sent.
+    FILE_TOO_LARGE: That file is larger than the import limit. Split it or raise the limit.
+    FILE_TYPE_NOT_ACCEPTED: That file is not a text return file. Compressed and binary files are not accepted.
+    FILE_NOT_TEXT: That file contains binary data. Pick the plain-text return file.
+    CONTENT_DIGEST_MISMATCH: The file changed in transit. Try the import again.
+    UNAUTHORIZED: This console is not authorised to talk to the engine (%{reason}).
+
+  flash:
+    imported: Return file imported.
+    already_imported: That file was already imported. Showing the existing batch.
+
+  locale:
+    switch: Language
+
+  number:
+    currency:
+      format:
+        unit: "$"
+        format: "%u%n"
+        delimiter: ","
+        separator: "."
+        precision: 2
+
+  date:
+    formats:
+      long: "%b %-d, %Y"

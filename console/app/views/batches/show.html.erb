@@ -1,0 +1,77 @@
+<% content_for :title, @batch["filename"] %>
+
+<%#
+  A tela abre com o numero que e a razao de existir do produto: quanto ainda
+  nao fechou. Ele fecha em zero quando o trabalho termina.
+%>
+<div class="flex flex-wrap items-baseline justify-between gap-4">
+  <div>
+    <p class="tabular text-[39px] font-semibold leading-[1.1]"
+       style="color: <%= @batch["unreconciledCents"].to_i.zero? ? "var(--matched)" : "var(--divergence)" %>">
+      <%= format_cents(@batch["unreconciledCents"]) %>
+    </p>
+    <p class="text-[12.8px]"><%= t("batches.show.unreconciled") %></p>
+  </div>
+
+  <div class="text-end">
+    <p class="font-medium"><%= @batch["filename"] %></p>
+    <p class="text-[12.8px]">
+      <%= t("batches.show.lines", count: @batch["lineCount"]) %> ·
+      <%= long_date(@batch["importedAt"]) %>
+    </p>
+  </div>
+</div>
+
+<%# Estado nunca so por cor: glifo proprio ao lado do numero. %>
+<nav class="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t pt-3 text-sm" style="border-color: var(--rule)">
+  <%= link_to batch_path(@batch["id"]),
+              class: "min-h-11 flex items-center #{'font-semibold underline' if @status.blank?}" do %>
+    <%= t("batches.show.all") %>
+  <% end %>
+
+  <% %w[MATCHED NEEDS_REVIEW UNMATCHED REJECTED].each do |status| %>
+    <%= link_to batch_path(@batch["id"], status: status),
+                class: "min-h-11 flex items-center gap-1 #{'font-semibold underline' if @status == status}" do %>
+      <span aria-hidden="true"><%= status_glyph(status) %></span>
+      <span class="tabular"><%= @batch.dig("counts", status).to_i %></span>
+      <span><%= status_label(status) %></span>
+    <% end %>
+  <% end %>
+</nav>
+
+<div class="scroll-x mt-4">
+  <table class="w-full min-w-[46rem] border-collapse text-[14px]">
+    <thead>
+      <tr class="border-b text-start" style="border-color: var(--rule)">
+        <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("batches.show.line") %></th>
+        <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("batches.show.paid") %></th>
+        <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("batches.show.our_number") %></th>
+        <th scope="col" class="py-2 pe-3 text-end font-medium"><%= t("batches.show.amount") %></th>
+        <th scope="col" class="py-2 text-start font-medium"><%= t("batches.show.counterpart") %></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @entries.each do |entry| %>
+        <tr class="band <%= status_rule_class(entry["status"]) %>">
+          <td class="tabular py-2 ps-2 pe-3">
+            <span aria-hidden="true"><%= status_glyph(entry["status"]) %></span>
+            <span class="sr-only"><%= status_label(entry["status"]) %></span>
+            <%= entry["line"] %>
+          </td>
+          <td class="tabular py-2 pe-3"><%= table_date(entry["paidAt"]) %></td>
+          <td class="tabular py-2 pe-3"><%= entry["ourNumber"].presence || t("batches.show.none") %></td>
+          <td class="tabular py-2 pe-3 text-end"><%= format_cents(entry["amountCents"]) %></td>
+          <td class="py-2">
+            <%= entry["counterparty"].presence || t("batches.show.none") %>
+            <% if (text = occurrence_text(entry["occurrence"])) %>
+              <span class="block text-[12.8px]" style="color: var(--divergence)"><%= text %></span>
+            <% elsif (reason = match_reason_label(entry["matchReason"])) %>
+              <span class="block text-[12.8px]"><%= reason %></span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

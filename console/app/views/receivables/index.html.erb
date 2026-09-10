@@ -1,0 +1,30 @@
+<% content_for :title, t("receivables.index.title") %>
+
+<h1 class="text-[25px] font-semibold leading-tight"><%= t("receivables.index.title") %></h1>
+
+<% if @receivables.empty? %>
+  <p class="mt-6 max-w-[72ch]"><%= t("receivables.index.empty") %></p>
+<% else %>
+  <div class="scroll-x mt-6">
+    <table class="w-full min-w-[40rem] border-collapse text-[14px]">
+      <thead>
+        <tr class="border-b" style="border-color: var(--rule)">
+          <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("receivables.index.our_number") %></th>
+          <th scope="col" class="py-2 pe-3 text-end font-medium"><%= t("receivables.index.amount") %></th>
+          <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("receivables.index.due") %></th>
+          <th scope="col" class="py-2 text-start font-medium"><%= t("receivables.index.payer") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @receivables.each do |receivable| %>
+          <tr class="band">
+            <td class="tabular py-2 pe-3"><%= receivable["ourNumber"] %></td>
+            <td class="tabular py-2 pe-3 text-end"><%= format_cents(receivable["amountCents"]) %></td>
+            <td class="tabular py-2 pe-3"><%= table_date(receivable["dueDate"]) %></td>
+            <td class="py-2"><%= receivable["payer"] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

@@ -1,0 +1,30 @@
+base_locale: en
+locales: [en, pt-BR]
+
+data:
+  read:
+    - config/locales/%{locale}.yml
+  write:
+    - config/locales/%{locale}.yml
+
+search:
+  paths:
+    - app/
+
+ignore_unused:
+  # Chaves indexadas pelo codigo que vem do motor: `t("occurrence.#{code}")`.
+  # O i18n-tasks nao consegue seguir a interpolacao, e apagar estas chaves
+  # deixaria a tela mostrando o identificador cru para o operador.
+  # Quem prova que elas existem e spec/i18n/engine_codes_spec.rb, contra o enum.
+  - occurrence.*
+  - match_reason.*
+  - status.*
+  - status_glyph.*
+  - error.*
+  - flash.*
+  - number.currency.*
+  - date.formats.*
+
+ignore_missing:
+  - number.currency.*
+  - date.formats.*

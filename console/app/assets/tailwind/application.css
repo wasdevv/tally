@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+ * Papel greenbar de impressora contabil. A listra alternada existe ha 60 anos
+ * porque olho humano perde a linha ao varrer coluna longa -- referencia
+ * funcional, nao nostalgia.
+ */
+:root {
+  --paper:      #F4F6F1;
+  --band:       #E5EDE4;
+  --ink:        #16241F;
+  --rule:       #C6D2C4;
+  --matched:    #2F5D3A;
+  --review:     #8A6A12;
+  --divergence: #9E2B25;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Coluna numerica com digito de largura fixa: e o que deixa o olho descer em
+   linha reta procurando a linha que nao fecha. */
+.tabular {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.band:nth-child(odd) { background: var(--band); }
+
+/* Foco visivel em tudo. Nunca outline: none. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Movimento so responde a acao: a linha resolvida colapsa e a proxima sobe. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* A tabela nao vira card empilhado: card destroi a varredura vertical de
+   valores, que e a unica coisa que esta tela faz bem. Em telas estreitas ela
+   rola dentro do proprio container, com a pagina inteira sem scroll lateral. */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

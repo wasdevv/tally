@@ -1,0 +1,104 @@
+pt-BR:
+  app:
+    name: Tally
+
+  nav:
+    batches: Lotes
+    receivables: Recebíveis
+    import: Importar
+
+  batches:
+    index:
+      title: Lotes
+      empty: Nenhum lote ainda. Importe um arquivo de retorno para começar a conciliar.
+      empty_action: Importar arquivo de retorno
+      lines: "%{count} linhas"
+    show:
+      unreconciled: não conciliado
+      lines: "%{count} linhas"
+      all: Todos
+      line: Linha
+      paid: Pago em
+      our_number: Nosso número
+      amount: Valor
+      counterpart: Contraparte
+      none: "—"
+
+  receivables:
+    index:
+      title: Recebíveis
+      empty: Nenhum recebível cadastrado ainda.
+      our_number: Nosso número
+      amount: Valor
+      due: Vencimento
+      payer: Sacado
+
+  imports:
+    new:
+      title: Importar arquivo de retorno
+      file: Arquivo de retorno
+      submit: Importar
+      hint: Arquivos de retorno CNAB 400 de largura fixa.
+
+  status:
+    MATCHED: Conciliado
+    NEEDS_REVIEW: Revisão
+    UNMATCHED: Sem par
+    REJECTED: Rejeitado
+
+  status_glyph:
+    MATCHED: "■"
+    NEEDS_REVIEW: "◧"
+    UNMATCHED: "□"
+    REJECTED: "▨"
+
+  match_reason:
+    EXACT: Casamento exato
+    WITHIN_TOLERANCE: Dentro da tolerância
+    AMOUNT_MISMATCH: Valor não confere com o título
+    AMOUNT_ONLY: Valor confere, mas o título não
+    AMBIGUOUS: Mais de um candidato
+
+  occurrence:
+    ROW_TOO_SHORT: "Linha %{line}: registro menor que o layout (%{length} caracteres)"
+    ROW_TOO_LONG: "Linha %{line}: registro maior que o layout (%{length} caracteres)"
+    ROW_INVALID_DATE: "Linha %{line}: data inválida em %{field} (%{raw})"
+    ROW_INVALID_AMOUNT: "Linha %{line}: valor inválido em %{field} (%{raw})"
+    ROW_AMOUNT_OUT_OF_RANGE: "Linha %{line}: valor fora da faixa em %{field} (%{raw})"
+    ROW_MISSING_FIELD: "Linha %{line}: campo obrigatório %{field} está em branco"
+    ROW_UNKNOWN_RECORD_TYPE: "Linha %{line}: tipo de registro desconhecido (%{raw})"
+    ROW_INVALID_ENCODING: "Linha %{line}: codificação de caractere inválida em %{field}"
+
+  error:
+    title: Algo precisa da sua atenção
+    ENGINE_UNAVAILABLE: O motor não está respondendo. Confira se ele está no ar e recarregue esta página.
+    ENGINE_ERROR: O motor recusou a requisição (status %{status}).
+    ENGINE_BAD_RESPONSE: O motor devolveu uma resposta que este console não conseguiu ler (status %{status}).
+    BATCH_NOT_FOUND: Esse lote não existe. Pode ter sido removido.
+    FILE_MISSING: Escolha um arquivo de retorno antes de importar.
+    FILE_EMPTY: Esse arquivo está vazio. Escolha o arquivo de retorno que o banco enviou.
+    FILE_TOO_LARGE: Esse arquivo passa do limite de importação. Divida o arquivo ou aumente o limite.
+    FILE_TYPE_NOT_ACCEPTED: Esse arquivo não é um retorno em texto. Arquivos compactados e binários não são aceitos.
+    FILE_NOT_TEXT: Esse arquivo contém dados binários. Escolha o arquivo de retorno em texto puro.
+    CONTENT_DIGEST_MISMATCH: O arquivo mudou no caminho. Tente a importação de novo.
+    UNAUTHORIZED: Este console não está autorizado a falar com o motor (%{reason}).
+
+  flash:
+    imported: Arquivo de retorno importado.
+    already_imported: Esse arquivo já tinha sido importado. Mostrando o lote existente.
+
+  locale:
+    switch: Idioma
+
+  number:
+    currency:
+      format:
+        unit: "R$"
+        format: "%u %n"
+        delimiter: "."
+        separator: ","
+        precision: 2
+
+  date:
+    formats:
+      long: "%d/%m/%Y"
