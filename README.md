@@ -37,6 +37,8 @@ it to be revisited. Full text in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 The REST contract is in [docs/openapi.yml](docs/openapi.yml), and a test compares
 it against the controllers — a contract that ages in silence is worse than none.
+[docs/RELATORIO.md](docs/RELATORIO.md) is the full write-up: every measured
+number, the decisions, and the bugs that only showed up with the stack running.
 
 ## Numbers
 
