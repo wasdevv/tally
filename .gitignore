@@ -3,3 +3,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 .env
 *.log
+
+# Artefato de runtime do Rails: pidfile versionado quebra o proximo boot.
+console/tmp/
+console/log/
