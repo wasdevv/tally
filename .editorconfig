@@ -1,0 +1,12 @@
+# Uma fonte de verdade para os dois linters. Sem isto o ktlint colapsa uma
+# expressao para caber "na mesma linha" e o detekt reprova a linha por
+# comprimento -- os dois gates brigando entre si em cima do mesmo arquivo.
+root = true
+
+[*.{kt,kts}]
+max_line_length = 120
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true

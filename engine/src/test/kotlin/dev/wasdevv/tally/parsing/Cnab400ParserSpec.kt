@@ -15,11 +15,13 @@ class Cnab400ParserSpec : StringSpec({
     "registro de lancamento vira Entry com valor, data e nosso numero" {
         val file =
             SyntheticCnab400.file(
-                SyntheticCnab400.detail(
-                    ourNumber = "00012938",
-                    amountCents = 120400,
-                    paidAt = LocalDate.of(2026, 3, 12),
-                    counterparty = "Silva ME",
+                listOf(
+                    SyntheticCnab400.detail(
+                        ourNumber = "00012938",
+                        amountCents = 120400,
+                        paidAt = LocalDate.of(2026, 3, 12),
+                        counterparty = "Silva ME",
+                    ),
                 ),
             )
 
@@ -34,7 +36,7 @@ class Cnab400ParserSpec : StringSpec({
     }
 
     "header e trailer nao viram lancamento, mas continuam contabilizados" {
-        val parsed = Cnab400.parse(SyntheticCnab400.file(SyntheticCnab400.detail()))
+        val parsed = Cnab400.parse(SyntheticCnab400.file(listOf(SyntheticCnab400.detail())))
 
         parsed.lines.size shouldBe 1
         parsed.structuralLines shouldContainExactly listOf(1, 3)
@@ -44,7 +46,7 @@ class Cnab400ParserSpec : StringSpec({
     "linha curta e rejeitada com o numero da linha e o comprimento lido" {
         val parsed =
             Cnab400.parse(
-                SyntheticCnab400.file(SyntheticCnab400.detail(), extraRaw = listOf("1" + "X".repeat(20))),
+                SyntheticCnab400.file(listOf(SyntheticCnab400.detail()), extraRaw = listOf("1" + "X".repeat(20))),
             )
 
         val rejected = (parsed.lines.last() as ParsedLine.Rejected).occurrence
@@ -67,9 +69,11 @@ class Cnab400ParserSpec : StringSpec({
         val parsed =
             Cnab400.parse(
                 SyntheticCnab400.file(
-                    SyntheticCnab400.detail(ourNumber = "00000001"),
-                    SyntheticCnab400.detail(ourNumber = "00000002").replaceRange(110, 116, "000000"),
-                    SyntheticCnab400.detail(ourNumber = "00000003"),
+                    listOf(
+                        SyntheticCnab400.detail(ourNumber = "00000001"),
+                        SyntheticCnab400.detail(ourNumber = "00000002").replaceRange(110, 116, "000000"),
+                        SyntheticCnab400.detail(ourNumber = "00000003"),
+                    ),
                 ),
             )
 
@@ -87,7 +91,7 @@ class Cnab400ParserSpec : StringSpec({
                 if (i % 10 == 0) row.replaceRange(110, 116, "999999") else row
             }
 
-        val parsed = Cnab400.parse(SyntheticCnab400.file(*details.toTypedArray()))
+        val parsed = Cnab400.parse(SyntheticCnab400.file(details))
 
         parsed.lines.count { it is ParsedLine.Valid } shouldBe 90
         parsed.lines.count { it is ParsedLine.Rejected } shouldBe 10
@@ -95,11 +99,11 @@ class Cnab400ParserSpec : StringSpec({
     }
 
     "CRLF, BOM e linha vazia final nao mudam o razao" {
-        val comLf = Cnab400.parse(SyntheticCnab400.file(SyntheticCnab400.detail()))
+        val comLf = Cnab400.parse(SyntheticCnab400.file(listOf(SyntheticCnab400.detail())))
         val comCrLf =
             Cnab400.parse(
                 "" +
-                    SyntheticCnab400.file(SyntheticCnab400.detail())
+                    SyntheticCnab400.file(listOf(SyntheticCnab400.detail()))
                         .replace("\n", "\r\n") + "\r\n",
             )
 

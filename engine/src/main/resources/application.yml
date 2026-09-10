@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: tally-engine
+  datasource:
+    # Conexao so por variavel de ambiente. Nenhum segredo no repositorio.
+    url: ${TALLY_DB_URL:jdbc:postgresql://localhost:5432/tally}
+    username: ${TALLY_DB_USER:tally}
+    password: ${TALLY_DB_PASSWORD:}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: ${TALLY_MAX_UPLOAD:32MB}
+      max-request-size: ${TALLY_MAX_UPLOAD:32MB}
+
+server:
+  port: ${TALLY_PORT:8080}
+
+tally:
+  # Sem valor default de proposito: o smoke check de boot recusa subir fora de
+  # dev/test sem uma chave forte, em vez de subir com uma chave que todo mundo
+  # que leu o repositorio conhece.
+  hmac-secret: ${TALLY_HMAC_SECRET:}
+  # Janela anti-replay. Assinatura valida fora dela e recusada.
+  clock-skew-seconds: ${TALLY_CLOCK_SKEW:300}

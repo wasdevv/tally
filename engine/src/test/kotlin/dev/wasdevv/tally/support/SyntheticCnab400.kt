@@ -40,7 +40,7 @@ object SyntheticCnab400 {
 
     /** Header, os lancamentos, as linhas cruas extras e o trailer -- nessa ordem. */
     fun file(
-        vararg details: String,
+        details: List<String> = emptyList(),
         extraRaw: List<String> = emptyList(),
     ): String = (listOf(header()) + details + extraRaw + listOf(trailer())).joinToString("\n")
 

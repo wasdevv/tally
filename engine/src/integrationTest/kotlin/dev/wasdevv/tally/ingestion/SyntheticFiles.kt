@@ -23,7 +23,10 @@ object SyntheticFiles {
         return String(row)
     }
 
-    fun file(details: List<String>): String = (listOf(structural("0")) + details + listOf(structural("9"))).joinToString("\n")
+    fun file(details: List<String>): String =
+        (listOf(structural("0")) + details + listOf(structural("9"))).joinToString(
+            "\n",
+        )
 
     private fun structural(kind: String) = String(CharArray(RECORD_LENGTH) { ' ' }.also { it.put(1, kind) })
 

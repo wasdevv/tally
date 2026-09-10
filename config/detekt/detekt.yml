@@ -26,3 +26,10 @@ style:
     # em um unico ponto de saida troca clareza por conformidade com a regra.
     max: 4
     excludeGuardClauses: true
+
+performance:
+  SpreadOperator:
+    # `runApplication<TallyApplication>(*args)` e a forma documentada de subir o
+    # Spring Boot em Kotlin, e acontece uma vez, no boot. A copia de array que a
+    # regra teme custa menos que divergir da assinatura que todo mundo reconhece.
+    excludes: ['**/TallyApplication.kt']
