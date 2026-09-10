@@ -1,29 +1,46 @@
 <% content_for :title, t("batches.index.title") %>
 
-<h1 class="text-[25px] font-semibold leading-tight"><%= t("batches.index.title") %></h1>
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <h1 class="text-[25px] font-semibold leading-tight"><%= t("batches.index.title") %></h1>
+  <%= link_to t("nav.import"), new_import_path, class: "btn btn-primary" %>
+</div>
 
 <% if @batches.empty? %>
   <%# Vazio e convite, com a acao ali. %>
-  <div class="mt-6 max-w-[72ch]">
-    <p><%= t("batches.index.empty") %></p>
-    <p class="mt-4">
-      <%= link_to t("batches.index.empty_action"), new_import_path,
-                  class: "inline-flex min-h-11 items-center border px-4 font-medium",
-                  style: "border-color: var(--ink)" %>
+  <div class="panel mt-6 max-w-[52rem] p-8">
+    <p class="max-w-[72ch]"><%= t("batches.index.empty") %></p>
+    <p class="mt-5">
+      <%= link_to t("batches.index.empty_action"), new_import_path, class: "btn btn-primary" %>
     </p>
   </div>
 <% else %>
-  <ul class="mt-6 divide-y" style="border-color: var(--rule)">
-    <% @batches.each do |batch| %>
-      <li class="band py-3">
-        <%= link_to batch_path(batch["id"]), class: "flex flex-wrap items-baseline gap-x-4 gap-y-1" do %>
-          <span class="tabular text-[25px] font-semibold" style="color: <%= batch["unreconciledCents"].to_i.zero? ? "var(--matched)" : "var(--divergence)" %>">
-            <%= format_cents(batch["unreconciledCents"]) %>
-          </span>
-          <span><%= batch["filename"] %></span>
-          <span class="text-[12.8px]"><%= t("batches.index.lines", count: batch["lineCount"]) %></span>
+  <div class="scroll-x mt-6">
+    <table class="ledger min-w-[40rem] text-[14px]">
+      <thead>
+        <tr>
+          <th scope="col" class="text-start"><%= t("batches.index.file") %></th>
+          <th scope="col" class="text-start"><%= t("batches.index.imported") %></th>
+          <th scope="col" class="text-end"><%= t("batches.index.lines_column") %></th>
+          <th scope="col" class="text-end"><%= t("batches.show.unreconciled") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @batches.each do |batch| %>
+          <% open = batch["unreconciledCents"].to_i != 0 %>
+          <tr class="state-<%= open ? "NEEDS_REVIEW" : "MATCHED" %>">
+            <td>
+              <%= link_to batch["filename"], batch_path(batch["id"]),
+                          class: "font-medium underline" %>
+            </td>
+            <td class="tabular"><%= table_date(batch["importedAt"]) %></td>
+            <td class="tabular text-end"><%= batch["lineCount"] %></td>
+            <td class="tabular text-end text-[20px] font-semibold"
+                style="color: <%= open ? "var(--divergence)" : "var(--matched)" %>">
+              <%= format_cents(batch["unreconciledCents"]) %>
+            </td>
+          </tr>
         <% end %>
-      </li>
-    <% end %>
-  </ul>
+      </tbody>
+    </table>
+  </div>
 <% end %>

@@ -51,14 +51,14 @@ module LedgerHelper
     t("match_reason.#{reason}", default: reason)
   end
 
-  # Estado nunca so por cor: cada um tem glifo proprio e barra de 3px na borda.
-  # Funciona em daltonismo, em impressao preto e branco e em captura sem cor.
-  def status_rule_class(status)
+  # O token de cor de cada estado. A marca de 3px na borda vem da classe
+  # `.state-<ESTADO>` no CSS; aqui so o nome do token, para o glifo.
+  def status_token(status)
     {
-      "MATCHED" => "border-l-[3px] border-l-[var(--matched)]",
-      "NEEDS_REVIEW" => "border-l-[3px] border-l-[var(--review)]",
-      "UNMATCHED" => "border-l-[3px] border-l-[var(--rule)]",
-      "REJECTED" => "border-l-[3px] border-l-[var(--divergence)]"
-    }.fetch(status, "border-l-[3px] border-l-transparent")
+      "MATCHED" => "matched",
+      "NEEDS_REVIEW" => "review",
+      "UNMATCHED" => "rule",
+      "REJECTED" => "divergence"
+    }.fetch(status, "ink")
   end
 end

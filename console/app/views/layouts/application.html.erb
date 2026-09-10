@@ -3,7 +3,6 @@
   <head>
     <title><%= content_for(:title) || t("app.name") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= yield :head %>
@@ -12,20 +11,26 @@
   </head>
 
   <body class="min-h-screen">
-    <header class="border-b" style="border-color: var(--rule)">
-      <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <%= link_to t("app.name"), root_path, class: "text-xl font-semibold" %>
+    <header style="border-bottom: 1px solid var(--rule)">
+      <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 px-4">
+        <%= link_to root_path, class: "nav-link me-2 text-xl font-semibold" do %>
+          <%= t("app.name") %>
+        <% end %>
 
-        <%= link_to t("nav.batches"), batches_path, class: "min-h-11 flex items-center" %>
-        <%= link_to t("nav.receivables"), receivables_path, class: "min-h-11 flex items-center" %>
-        <%= link_to t("nav.import"), new_import_path, class: "min-h-11 flex items-center" %>
+        <% { batches: batches_path, receivables: receivables_path, import: new_import_path }.each do |key, path| %>
+          <%= link_to t("nav.#{key}"), path,
+                      class: "nav-link",
+                      "aria-current": (current_page?(path) ? "page" : nil) %>
+        <% end %>
 
-        <div class="ms-auto flex items-center gap-2 text-sm">
+        <%# Em tela estreita o seletor de idioma cai para a propria linha em vez
+            de ser empurrado por `ms-auto` para fora da viewport -- era isso que
+            fazia a PAGINA rolar de lado em 320px, o que o brief proibe. %>
+        <div class="flex w-full items-center gap-1 pb-2 text-sm sm:ms-auto sm:w-auto sm:pb-0">
           <span class="sr-only"><%= t("locale.switch") %></span>
           <% available_locales.each do |locale| %>
-            <%= link_to locale.to_s.upcase,
-                        url_for(locale: locale),
-                        class: "min-h-11 flex items-center px-1 #{'font-semibold underline' if locale == current_locale}",
+            <%= link_to locale.to_s.upcase, url_for(locale: locale),
+                        class: "nav-link px-2",
                         lang: locale,
                         "aria-current": (locale == current_locale ? "true" : nil) %>
           <% end %>
@@ -34,10 +39,13 @@
     </header>
 
     <% if flash[:notice] %>
-      <p class="mx-auto max-w-6xl px-4 pt-4" role="status"><%= flash[:notice] %></p>
+      <div class="mx-auto max-w-6xl px-4 pt-4">
+        <p class="panel px-4 py-3" role="status"
+           style="border-left: 3px solid var(--matched)"><%= flash[:notice] %></p>
+      </div>
     <% end %>
 
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main class="mx-auto max-w-6xl px-4 py-8">
       <%= yield %>
     </main>
   </body>

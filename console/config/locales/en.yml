@@ -12,7 +12,9 @@ en:
       title: Batches
       empty: No batches yet. Import a return file to start reconciling.
       empty_action: Import a return file
-      lines: "%{count} lines"
+      file: File
+      imported: Imported
+      lines_column: Lines
     show:
       unreconciled: unreconciled
       lines: "%{count} lines"
@@ -24,6 +26,7 @@ en:
       counterpart: Counterpart
       none: "—"
       review: Review
+      empty_filter: No lines in this state.
 
   reviews:
     show:
@@ -48,6 +51,7 @@ en:
       title: Import a return file
       file: Return file
       submit: Import
+      cancel: Cancel
       hint: Fixed-width CNAB 400 return files.
 
   status:

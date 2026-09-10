@@ -4,18 +4,20 @@
   A tela abre com o numero que e a razao de existir do produto: quanto ainda
   nao fechou. Ele fecha em zero quando o trabalho termina.
 %>
-<div class="flex flex-wrap items-baseline justify-between gap-4">
+<div class="flex flex-wrap items-start justify-between gap-6">
   <div>
     <p class="tabular text-[39px] font-semibold leading-[1.1]"
        style="color: <%= @batch["unreconciledCents"].to_i.zero? ? "var(--matched)" : "var(--divergence)" %>">
       <%= format_cents(@batch["unreconciledCents"]) %>
     </p>
-    <p class="text-[12.8px]"><%= t("batches.show.unreconciled") %></p>
+    <p class="mt-1 text-[12.8px] uppercase" style="letter-spacing: .04em; color: color-mix(in srgb, var(--ink) 65%, transparent)">
+      <%= t("batches.show.unreconciled") %>
+    </p>
   </div>
 
   <div class="text-end">
     <p class="font-medium"><%= @batch["filename"] %></p>
-    <p class="text-[12.8px]">
+    <p class="mt-1 text-[12.8px]" style="color: color-mix(in srgb, var(--ink) 65%, transparent)">
       <%= t("batches.show.lines", count: @batch["lineCount"]) %> ·
       <%= long_date(@batch["importedAt"]) %>
     </p>
@@ -23,56 +25,74 @@
 </div>
 
 <%# Estado nunca so por cor: glifo proprio ao lado do numero. %>
-<nav class="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t pt-3 text-sm" style="border-color: var(--rule)">
-  <%= link_to batch_path(@batch["id"]),
-              class: "min-h-11 flex items-center #{'font-semibold underline' if @status.blank?}" do %>
-    <%= t("batches.show.all") %>
+<nav class="mt-6 flex flex-wrap gap-x-1 text-sm" style="border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule)">
+  <%= link_to batch_path(@batch["id"]), class: "chip",
+              "aria-current": (@status.blank? ? "true" : nil) do %>
+    <span><%= t("batches.show.all") %></span>
+    <span class="tabular"><%= @batch["lineCount"] %></span>
   <% end %>
 
   <% %w[MATCHED NEEDS_REVIEW UNMATCHED REJECTED].each do |status| %>
-    <%= link_to batch_path(@batch["id"], status: status),
-                class: "min-h-11 flex items-center gap-1 #{'font-semibold underline' if @status == status}" do %>
-      <span aria-hidden="true"><%= status_glyph(status) %></span>
-      <span class="tabular"><%= @batch.dig("counts", status).to_i %></span>
+    <% count = @batch.dig("counts", status).to_i %>
+    <%= link_to batch_path(@batch["id"], status: status), class: "chip",
+                "aria-current": (@status == status ? "true" : nil),
+                style: ("opacity: .55" if count.zero?) do %>
+      <span aria-hidden="true" style="color: var(--<%= status_token(status) %>)"><%= status_glyph(status) %></span>
       <span><%= status_label(status) %></span>
+      <span class="tabular"><%= count %></span>
     <% end %>
   <% end %>
 </nav>
 
-<div class="scroll-x mt-4">
-  <table class="w-full min-w-[46rem] border-collapse text-[14px]">
+<div class="scroll-x mt-6">
+  <table class="ledger w-full text-[14px] md:min-w-[40rem] lg:min-w-[46rem]">
     <thead>
-      <tr class="border-b text-start" style="border-color: var(--rule)">
-        <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("batches.show.line") %></th>
-        <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("batches.show.paid") %></th>
-        <th scope="col" class="py-2 pe-3 text-start font-medium"><%= t("batches.show.our_number") %></th>
-        <th scope="col" class="py-2 pe-3 text-end font-medium"><%= t("batches.show.amount") %></th>
-        <th scope="col" class="py-2 text-start font-medium"><%= t("batches.show.counterpart") %></th>
+      <%#
+        Colunas por PRIORIDADE, nao por ordem de banco de dados. Em tela
+        estreita o que sobrevive e estado, valor e contraparte -- o valor e a
+        coluna que o analista veio ler, e ela nao pode ser a que sai. Numero da
+        linha e nosso numero voltam conforme a largura permite.
+      %>
+      <tr>
+        <th scope="col" class="text-start"><%= t("batches.show.line") %></th>
+        <th scope="col" class="hidden text-start lg:table-cell"><%= t("batches.show.paid") %></th>
+        <th scope="col" class="hidden text-start md:table-cell"><%= t("batches.show.our_number") %></th>
+        <th scope="col" class="text-end"><%= t("batches.show.amount") %></th>
+        <th scope="col" class="text-start"><%= t("batches.show.counterpart") %></th>
+        <th scope="col" class="text-end"><span class="sr-only"><%= t("batches.show.review") %></span></th>
       </tr>
     </thead>
 
     <tbody>
       <% @entries.each do |entry| %>
-        <tr class="band <%= status_rule_class(entry["status"]) %>">
-          <td class="tabular py-2 ps-2 pe-3">
-            <span aria-hidden="true"><%= status_glyph(entry["status"]) %></span>
+        <tr class="state-<%= entry["status"] %>">
+          <td class="tabular">
+            <span aria-hidden="true" style="color: var(--<%= status_token(entry["status"]) %>)"><%= status_glyph(entry["status"]) %></span>
             <span class="sr-only"><%= status_label(entry["status"]) %></span>
             <%= entry["line"] %>
           </td>
-          <td class="tabular py-2 pe-3"><%= table_date(entry["paidAt"]) %></td>
-          <td class="tabular py-2 pe-3"><%= entry["ourNumber"].presence || t("batches.show.none") %></td>
-          <td class="tabular py-2 pe-3 text-end"><%= format_cents(entry["amountCents"]) %></td>
-          <td class="py-2">
+          <td class="tabular hidden lg:table-cell"><%= table_date(entry["paidAt"]) %></td>
+          <td class="tabular hidden md:table-cell"><%= entry["ourNumber"].presence || t("batches.show.none") %></td>
+          <td class="tabular text-end" style="font-weight: 500"><%= format_cents(entry["amountCents"]) %></td>
+          <td>
             <%= entry["counterparty"].presence || t("batches.show.none") %>
-            <% if entry["status"] == "NEEDS_REVIEW" %>
-              <%= link_to t("batches.show.review"),
-                          batch_review_path(@batch["id"], entry["line"]),
-                          class: "ms-2 inline-flex min-h-11 items-center underline" %>
-            <% end %>
+            <%# Em tela estreita a data volta AQUI, embaixo da contraparte, em
+                vez de sumir: e o que o brief pede para menos de 640px. %>
+            <span class="tabular block text-[12.8px] lg:hidden"
+                  style="color: color-mix(in srgb, var(--ink) 55%, transparent)">
+              <%= table_date(entry["paidAt"]) %>
+            </span>
             <% if (text = occurrence_text(entry["occurrence"])) %>
               <span class="block text-[12.8px]" style="color: var(--divergence)"><%= text %></span>
             <% elsif (reason = match_reason_label(entry["matchReason"])) %>
-              <span class="block text-[12.8px]"><%= reason %></span>
+              <span class="block text-[12.8px]" style="color: color-mix(in srgb, var(--ink) 60%, transparent)"><%= reason %></span>
+            <% end %>
+          </td>
+          <td class="text-end">
+            <% if entry["status"] == "NEEDS_REVIEW" %>
+              <%= link_to t("batches.show.review"),
+                          batch_review_path(@batch["id"], entry["line"]),
+                          class: "btn btn-quiet", style: "min-height: 2rem; padding: 0 .75rem" %>
             <% end %>
           </td>
         </tr>
@@ -80,3 +100,7 @@
     </tbody>
   </table>
 </div>
+
+<% if @entries.empty? %>
+  <p class="panel mt-6 p-6 text-center"><%= t("batches.show.empty_filter") %></p>
+<% end %>

@@ -12,7 +12,9 @@ pt-BR:
       title: Lotes
       empty: Nenhum lote ainda. Importe um arquivo de retorno para começar a conciliar.
       empty_action: Importar arquivo de retorno
-      lines: "%{count} linhas"
+      file: Arquivo
+      imported: Importado
+      lines_column: Linhas
     show:
       unreconciled: não conciliado
       lines: "%{count} linhas"
@@ -24,6 +26,7 @@ pt-BR:
       counterpart: Contraparte
       none: "—"
       review: Revisar
+      empty_filter: Nenhuma linha neste estado.
 
   reviews:
     show:
@@ -48,6 +51,7 @@ pt-BR:
       title: Importar arquivo de retorno
       file: Arquivo de retorno
       submit: Importar
+      cancel: Cancelar
       hint: Arquivos de retorno CNAB 400 de largura fixa.
 
   status:

@@ -1,17 +1,22 @@
 <% content_for :title, t("imports.new.title") %>
 
 <h1 class="text-[25px] font-semibold leading-tight"><%= t("imports.new.title") %></h1>
+<p class="mt-1 max-w-[72ch] text-sm" style="color: color-mix(in srgb, var(--ink) 70%, transparent)">
+  <%= t("imports.new.hint") %>
+</p>
 
 <% if @error %>
-  <div class="mt-4"><%= render "shared/error", error: @error %></div>
+  <div class="mt-6 max-w-[52rem]"><%= render "shared/error", error: @error %></div>
 <% end %>
 
-<%= form_with url: import_path, method: :post, multipart: true, class: "mt-6 max-w-[72ch]" do |form| %>
+<%= form_with url: import_path, method: :post, multipart: true,
+              class: "panel mt-6 max-w-[52rem] p-6" do |form| %>
   <%= form.label :file, t("imports.new.file"), class: "block font-medium" %>
-  <%= form.file_field :file, required: true, class: "mt-2 block min-h-11 w-full" %>
-  <p class="mt-1 text-[12.8px]"><%= t("imports.new.hint") %></p>
+  <%= form.file_field :file, required: true, class: "file-field mt-3" %>
 
-  <%= form.submit t("imports.new.submit"),
-                  class: "mt-4 min-h-11 border px-4 font-medium",
-                  style: "border-color: var(--ink)" %>
+  <div class="mt-6 flex flex-wrap items-center gap-3"
+       style="border-top: 1px solid var(--rule); padding-top: 1.25rem">
+    <%= form.submit t("imports.new.submit"), class: "btn btn-primary" %>
+    <%= link_to t("imports.new.cancel"), batches_path, class: "btn btn-quiet" %>
+  </div>
 <% end %>
