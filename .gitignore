@@ -7,3 +7,7 @@ build/
 # Artefato de runtime do Rails: pidfile versionado quebra o proximo boot.
 console/tmp/
 console/log/
+
+# Rails master keys (console/ is a subfolder; the root rule never applied)
+**/config/master.key
+**/config/credentials/*.key
